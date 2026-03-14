@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as userService from '../services/userService.js';
 import { logger } from '../config.js';
-import { IUser } from '../models/userModel.js';
+import { IUsuario } from '../models/Usuario.js';
 
 /**
  * USER CONTROLLER
@@ -31,10 +31,8 @@ export const getUser = async (req: Request<{ id: string }>, res: Response): Prom
     }
 };
 
-export const createNewUser = async (req: Request<{}, {}, Partial<IUser>>, res: Response): Promise<void> => {
+export const createNewUser = async (req: Request<{}, {}, Partial<IUsuario>>, res: Response): Promise<void> => {
     try {
-        // The controller just passes the data.
-        // The service handles the creation AND the update of the Organization's user list.
         const newUser = await userService.createUser(req.body);
         res.status(201).json(newUser);
     } catch (error) {
@@ -43,10 +41,8 @@ export const createNewUser = async (req: Request<{}, {}, Partial<IUser>>, res: R
     }
 };
 
-export const updateExistingUser = async (req: Request<{ id: string }, {}, Partial<IUser>>, res: Response): Promise<void> => {
+export const updateExistingUser = async (req: Request<{ id: string }, {}, Partial<IUsuario>>, res: Response): Promise<void> => {
     try {
-        // The controller just passes the data.
-        // The service handles the userUpdate AND the update of the Organization's user list.
         const updated = await userService.updateUser(req.params.id, req.body);
         if (!updated) {
             res.status(404).json({ message: 'User not found' });

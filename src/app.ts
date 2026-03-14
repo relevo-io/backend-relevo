@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { apiPort } from './config.js'; 
 import userRoutes from './routes/userRoutes.js';
-import organizationRoutes from './routes/organizationRoutes.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 
 const app = express();
@@ -43,7 +42,6 @@ app.get('/ping', (_req: Request, res: Response) => {
  */
 // Resource-based routing
 app.use('/api/users', userRoutes);
-app.use('/api/organizations', organizationRoutes);
 
 /**
  * ERROR HANDLING

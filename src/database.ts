@@ -1,62 +1,62 @@
-import mongoose, { Types } from 'mongoose';
-import { OrganizationModel, IOrganization } from './models/organizationModel.js';
-import { UserModel, IUser } from './models/userModel.js';
+import mongoose from 'mongoose';
+import { Usuario, IUsuario } from './models/Usuario.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
     try {
         mongoose.set('strictQuery', true);
         await mongoose.connect(config.mongoUri);
-        logger.info('🚀 Connected to MongoDB');
+        logger.info('Connected to MongoDB');
     } catch (err) {
-        logger.error(err, '❌ Database connection failed');
-        throw err; // Re-throw so main() can handle it
+        logger.error(err, 'Database connection failed');
+        throw err;
     }
 }
 
 export async function seedingDatabase(): Promise<void> {
     try {
-        logger.warn('🧹 Cleaning database collections...');
-        await Promise.all([
-            UserModel.deleteMany({}),
-            OrganizationModel.deleteMany({})
-        ]);
+        logger.warn('Cleaning database collections...');
+        await Usuario.deleteMany({});
 
-        logger.info('🌱 Seeding initial data...');
+        logger.info('Seeding initial data...');
 
-        const createdOrgs: IOrganization[] = await OrganizationModel.insertMany([
-            { name: 'Tech Solutions', country: 'Spain', users: [] },
-            { name: 'Global Corp', country: 'USA', users: [] }
-        ]);
-
-        const org1Id = createdOrgs[0]._id;
-        const org2Id = createdOrgs[1]._id;
-
-        const usersData: IUser[] = [
-            { name: 'Marc', email: 'm@test.com', role: 'ADMIN', organization: new Types.ObjectId(org1Id?.toString()) },
-            { name: 'Anna', email: 'a@test.com', role: 'USER', organization: new Types.ObjectId(org1Id?.toString()) },
-            { name: 'John', email: 'j@test.com', role: 'EDITOR', organization: new Types.ObjectId(org2Id?.toString()) }
+        const usersData: IUsuario[] = [
+            {
+                role: 'OWNER',
+                fullName: 'Marc Sanchez',
+                email: 'm@test.com',
+                password: 'secret123',
+                location: 'Spain',
+                bio: 'Owner profile',
+                professionalBackground: '10 years in operations',
+                preferredRegions: ['Madrid', 'Barcelona']
+            },
+            {
+                role: 'INTERESTED',
+                fullName: 'Anna Lopez',
+                email: 'a@test.com',
+                password: 'secret123',
+                location: 'Spain',
+                bio: 'Interested in acquisition opportunities',
+                professionalBackground: 'Finance background',
+                preferredRegions: ['Valencia']
+            },
+            {
+                role: 'INTERESTED',
+                fullName: 'John Miller',
+                email: 'j@test.com',
+                password: 'secret123',
+                location: 'USA',
+                bio: 'Looking for international opportunities',
+                professionalBackground: 'Entrepreneur and operator',
+                preferredRegions: ['California', 'Texas']
+            }
         ];
 
-        const createdUsers = await UserModel.insertMany(usersData);
-        
-        // Manual Sync for Seeding
-        // Manually update the Organizations here to link the newly created Users.
-
-        // Link Marc and Anna to Tech Solutions
-        await OrganizationModel.findByIdAndUpdate(org1Id, {
-            $set: { users: [createdUsers[0]._id, createdUsers[1]._id] }
-        });
-
-        // Link John to Global Corp
-        await OrganizationModel.findByIdAndUpdate(org2Id, {
-            $set: { users: [createdUsers[2]._id] }
-        });
-
-        logger.info('✅ Database ready: %d orgs and %d users linked.', createdOrgs.length, createdUsers.length);
-
+        const createdUsers = await Usuario.insertMany(usersData);
+        logger.info('Database ready: %d users created.', createdUsers.length);
     } catch (err) {
-        logger.error(err, '❌ Seeding failed');
+        logger.error(err, 'Seeding failed');
         throw err;
     }
 }
