@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Usuario, IUsuario } from './models/Usuario.js';
+import { UsuarioModel, IUsuario } from './models/usuarioModel.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
@@ -16,7 +16,7 @@ export async function setupDatabase(): Promise<void> {
 export async function seedingDatabase(): Promise<void> {
     try {
         logger.warn('Cleaning database collections...');
-        await Usuario.deleteMany({});
+        await UsuarioModel.deleteMany({});
 
         logger.info('Seeding initial data...');
 
@@ -53,7 +53,7 @@ export async function seedingDatabase(): Promise<void> {
             }
         ];
 
-        const createdUsers = await Usuario.insertMany(usersData);
+        const createdUsers = await UsuarioModel.insertMany(usersData);
         logger.info('Database ready: %d users created.', createdUsers.length);
     } catch (err) {
         logger.error(err, 'Seeding failed');

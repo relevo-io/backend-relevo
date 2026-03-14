@@ -52,4 +52,4 @@ solicitudSchema.index(
   { unique: true, name: 'uniq_opportunity_interested_user' }
 );
 
-export const Solicitud = model<ISolicitud>('Solicitud', solicitudSchema);
+export const SolicitudModel = model<ISolicitud>('Solicitud', solicitudSchema);

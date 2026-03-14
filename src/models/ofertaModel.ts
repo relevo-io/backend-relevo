@@ -78,4 +78,4 @@ const ofertaSchema = new Schema<IOferta>(
   }
 );
 
-export const Oferta = model<IOferta>('Oferta', ofertaSchema);
+export const OfertaModel = model<IOferta>('Oferta', ofertaSchema);
