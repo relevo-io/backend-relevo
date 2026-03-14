@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                 /* Versió de JS a la que es tradueix (moderna) */
+    "module": "NodeNext",               /* Sistema de mòduls actual de Node.js */
+    "strict": true,                     /* EL MÉS IMPORTANT: Activa totes les validacions */
+    "esModuleInterop": true,            /* Millora la compatibilitat amb llibreries JS antigues */
+    "skipLibCheck": true,               /* Estalvia temps no revisant fitxers de definició de llibreries */
+    "forceConsistentCasingInFileNames": true, /* Evita errors entre Windows i Mac/Linux amb les majúscules */
+    "outDir": "./dist",                 /* On es guardarà el codi JS resultant */
+    "rootDir": "./src"                  /* On estarà el teu codi font TS */
+  },
+  "include": ["src/**/*"],              /* Inclou tots els fitxers de la carpeta src */
+  "exclude": ["node_modules"]           /* Ignora les llibreries externes */
+}

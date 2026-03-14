@@ -1,0 +1,76 @@
+### Variables de entorno
+@baseUrl = http://localhost:4000/api
+@pingUrl = http://localhost:4000/ping
+
+# Real IDs from your MongoDB after creating your first Organization and User.
+@orgId = 67cdfc2801cd6988c6ee7a3a
+@userId = 67cdfc2801cd6988c6ee7a3e
+
+##############################################
+# HEALTH CHECK
+##############################################
+
+### Check if the API is alive
+GET {{pingUrl}}
+
+##############################################
+# USERS
+##############################################
+
+### Get all users
+GET {{baseUrl}}/users/
+
+### Get analytics stats (Users per Country)
+GET {{baseUrl}}/users/stats
+
+### Get a specific user 
+GET {{baseUrl}}/users/{{userId}}
+
+### Create a new user
+POST {{baseUrl}}/users/
+Content-Type: application/json
+
+{
+    "name": "Marc Functional",
+    "email": "marc.func@example.com",
+    "role": "ADMIN",
+    "organization": "{{orgId}}"
+}
+
+### Update an existing user (Replace ID)
+PUT {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+
+{
+    "name": "Marc Updated",
+    "role": "EDITOR"
+}
+
+### Delete a user (Replace ID)
+DELETE {{baseUrl}}/users/{{userId}}
+
+##############################################
+# ORGANIZATIONS
+##############################################
+
+### Get all organizations
+GET {{baseUrl}}/organizations/
+
+### Get a specific organization
+GET {{baseUrl}}/organizations/{{orgId}}
+
+### Create a new organization
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+    "name": "Functional Tech"
+}
+
+### Update an organization (Replace ID)
+PUT {{baseUrl}}/organizations/{{orgId}}
+Content-Type: application/json
+
+{
+    "country": "Spain"
+}
