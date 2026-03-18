@@ -51,6 +51,10 @@ export const userRoles = ['OWNER', 'INTERESTED'] as const;
  *           type: array
  *           items:
  *             type: string
+ *         visible:
+ *           type: boolean
+ *           default: true
+ *           example: true
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -68,6 +72,7 @@ export interface IUsuario {
   bio?: string;
   professionalBackground?: string;
   preferredRegions?: string[];
+  visible?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -119,7 +124,12 @@ const usuarioSchema = new Schema<IUsuario>(
         type: String,
         trim: true
       }
-    ]
+    ],
+    visible: {
+      type: Boolean,
+      required: true,
+      default: true
+    }
   },
   {
     timestamps: true
