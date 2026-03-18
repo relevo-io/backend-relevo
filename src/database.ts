@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { UsuarioModel, IUsuario } from './models/usuarioModel.js';
+import { OfertaModel, IOferta } from './models/ofertaModel.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
@@ -17,6 +18,7 @@ export async function seedingDatabase(): Promise<void> {
     try {
         logger.warn('Cleaning database collections...');
         await UsuarioModel.deleteMany({});
+        await OfertaModel.deleteMany({});
 
         logger.info('Seeding initial data...');
 
@@ -55,6 +57,31 @@ export async function seedingDatabase(): Promise<void> {
 
         const createdUsers = await UsuarioModel.insertMany(usersData);
         logger.info('Database ready: %d users created.', createdUsers.length);
+
+        const ofertasData: IOferta[] = [
+            {
+                region: 'Catalonia',
+                sector: 'Technology',
+                revenueRange: 'BETWEEN_100K_500K',
+                owner: createdUsers[0]._id,
+                businessAgeYears: 5,
+                employeeRange: '11_25',
+                companyDescription: 'Growing SaaS startup'
+            },
+            {
+                region: 'Madrid',
+                sector: 'Hospitality',
+                revenueRange: 'UNDER_100K',
+                owner: createdUsers[1]._id,
+                businessAgeYears: 2,
+                employeeRange: '1_5',
+                companyDescription: 'Local restaurant with expansion potential'
+            }
+        ];
+
+        const createdOfertas = await OfertaModel.insertMany(ofertasData);
+        logger.info('Database ready: %d offers created.', createdOfertas.length);
+
     } catch (err) {
         logger.error(err, 'Seeding failed');
         throw err;
