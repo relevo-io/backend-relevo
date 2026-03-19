@@ -56,6 +56,23 @@ const options: swaggerJsdoc.Options = {
             }
           }
         },
+        Conflict: {
+          description: 'Conflicto de datos únicos',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  code: {
+                    type: 'string',
+                    example: 'DUPLICATE_KEY'
+                  }
+                }
+              }
+            }
+          }
+        },
       }
     }
   },

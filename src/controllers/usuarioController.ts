@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import { logger } from '../config.js';
+import { NextFunction, Request, Response } from 'express';
 import { IUsuario } from '../models/usuarioModel.js';
 import * as usuarioService from '../services/usuarioService.js';
 import {
@@ -8,17 +7,16 @@ import {
   UpdateUsuarioVisibilityBody
 } from '../validators/usuarioValidator.js';
 
-export const getUsuarios = async (_req: Request, res: Response): Promise<void> => {
+export const getUsuarios = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const usuarios = await usuarioService.listarUsuarios();
     res.status(200).json(usuarios);
   } catch (error) {
-    logger.error(error, 'Error obteniendo usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const getUsuario = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+export const getUsuario = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const usuario = await usuarioService.obtenerUsuarioPorId(req.params.id);
     if (!usuario) {
@@ -28,25 +26,20 @@ export const getUsuario = async (req: Request<{ id: string }>, res: Response): P
 
     res.status(200).json(usuario);
   } catch (error) {
-    logger.error(error, 'Error obteniendo usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const createUsuario = async (req: Request<{}, {}, Partial<IUsuario>>, res: Response): Promise<void> => {
+export const createUsuario = async (req: Request<{}, {}, Partial<IUsuario>>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const nuevoUsuario = await usuarioService.crearUsuario(req.body);
     res.status(201).json(nuevoUsuario);
   } catch (error) {
-    logger.error(error, 'Error creando usuario');
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const updateUsuario = async (
-  req: Request<{ id: string }, {}, Partial<IUsuario>>,
-  res: Response
-): Promise<void> => {
+export const updateUsuario = async (req: Request<{ id: string }, {}, Partial<IUsuario>>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const usuarioActualizado = await usuarioService.actualizarUsuario(req.params.id, req.body);
     if (!usuarioActualizado) {
@@ -56,12 +49,11 @@ export const updateUsuario = async (
 
     res.status(200).json(usuarioActualizado);
   } catch (error) {
-    logger.error(error, 'Error actualizando usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const deleteUsuario = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+export const deleteUsuario = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const eliminado = await usuarioService.eliminarUsuario(req.params.id);
     if (!eliminado) {
@@ -71,15 +63,11 @@ export const deleteUsuario = async (req: Request<{ id: string }>, res: Response)
 
     res.status(204).send();
   } catch (error) {
-    logger.error(error, 'Error eliminando usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const deleteManyUsuarios = async (
-  req: Request<{}, {}, DeleteManyUsuariosBody>,
-  res: Response
-): Promise<void> => {
+export const deleteManyUsuarios = async (req: Request<{}, {}, DeleteManyUsuariosBody>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { ids } = req.body;
     const deletedCount = await usuarioService.eliminarUsuariosPorIds(ids);
@@ -89,15 +77,11 @@ export const deleteManyUsuarios = async (
       deletedCount
     });
   } catch (error) {
-    logger.error(error, 'Error en borrado múltiple de usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const patchUsuarioVisibility = async (
-  req: Request<{ id: string }, {}, UpdateUsuarioVisibilityBody>,
-  res: Response
-): Promise<void> => {
+export const patchUsuarioVisibility = async (req: Request<{ id: string }, {}, UpdateUsuarioVisibilityBody>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const usuario = await usuarioService.actualizarVisibilidadUsuario(req.params.id, req.body.visible);
     if (!usuario) {
@@ -107,15 +91,11 @@ export const patchUsuarioVisibility = async (
 
     res.status(200).json(usuario);
   } catch (error) {
-    logger.error(error, 'Error actualizando visibilidad de usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };
 
-export const patchManyUsuariosVisibility = async (
-  req: Request<{}, {}, UpdateManyUsuariosVisibilityBody>,
-  res: Response
-): Promise<void> => {
+export const patchManyUsuariosVisibility = async (req: Request<{}, {}, UpdateManyUsuariosVisibilityBody>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { ids, visible } = req.body;
     const { matchedCount, modifiedCount } = await usuarioService.actualizarVisibilidadUsuarios(ids, visible);
@@ -128,7 +108,6 @@ export const patchManyUsuariosVisibility = async (
       visible
     });
   } catch (error) {
-    logger.error(error, 'Error actualizando visibilidad múltiple de usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
+    next(error);
   }
 };

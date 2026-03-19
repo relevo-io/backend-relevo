@@ -141,8 +141,12 @@ router.get('/', usuarioController.getUsuarios);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Usuario'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/:id', validate({ params: usuarioIdParamsSchema }), usuarioController.getUsuario);
 
@@ -161,6 +165,10 @@ router.get('/:id', validate({ params: usuarioIdParamsSchema }), usuarioControlle
  *     responses:
  *       201:
  *         description: Usuario creado exitosamente
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
@@ -335,8 +343,14 @@ router.patch(
  *     responses:
  *       200:
  *         description: Usuario actualizado exitosamente
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 /**
  * @openapi
@@ -353,8 +367,12 @@ router.patch(
  *     responses:
  *       204:
  *         description: Usuario eliminado exitosamente
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.put(
 	'/:id',
