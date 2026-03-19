@@ -44,54 +44,6 @@ export const accessRequestStatuses = ['PENDING', 'ACCEPTED', 'REJECTED'] as cons
  *         updatedAt:
  *           type: string
  *           format: date-time
- *
- *     CreateSolicitud:
- *       type: object
- *       required:
- *         - owner
- *         - interestedUser
- *         - opportunity
- *       properties:
- *         owner:
- *           type: string
- *           description: ID de l'usuari propietari
- *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         interestedUser:
- *           type: string
- *           description: ID de l'usuari interessat
- *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
- *         opportunity:
- *           type: string
- *           description: ID de l'oferta
- *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
- *         message:
- *           type: string
- *           maxLength: 1000
- *           example: 'I am interested in this opportunity.'
- *
- *     UpdateSolicitud:
- *       type: object
- *       properties:
- *         owner:
- *           type: string
- *           description: ID de l'usuari propietari
- *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         interestedUser:
- *           type: string
- *           description: ID de l'usuari interessat
- *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
- *         opportunity:
- *           type: string
- *           description: ID de l'oferta
- *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
- *         status:
- *           type: string
- *           enum: [PENDING, ACCEPTED, REJECTED]
- *           example: 'ACCEPTED'
- *         message:
- *           type: string
- *           maxLength: 1000
- *           example: 'Updated message'
  */
 export interface ISolicitud {
   _id?: Types.ObjectId;

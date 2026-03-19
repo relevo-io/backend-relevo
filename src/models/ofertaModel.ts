@@ -72,61 +72,6 @@ export const employeeRanges = [
  *           type: string
  *           readOnly: true
  *           format: date-time
- *
- *     CreateOferta:
- *       type: object
- *       required:
- *         - region
- *         - sector
- *         - owner
- *         - companyDescription
- *       properties:
- *         region:
- *           type: string
- *           example: 'Catalunya'
- *         sector:
- *           type: string
- *           example: 'Tecnologia'
- *         revenueRange:
- *           type: string
- *           enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
- *         owner:
- *           type: string
- *           description: ID de l'usuari propietari (referència a Usuario)
- *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         businessAgeYears:
- *           type: number
- *           minimum: 0
- *         employeeRange:
- *           type: string
- *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
- *         companyDescription:
- *           type: string
- *           maxLength: 3000
- *
- *     UpdateOferta:
- *       type: object
- *       minProperties: 1
- *       properties:
- *         region:
- *           type: string
- *         sector:
- *           type: string
- *         revenueRange:
- *           type: string
- *           enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
- *         owner:
- *           type: string
- *           description: ID de l'usuari propietari (referència a Usuario)
- *         businessAgeYears:
- *           type: number
- *           minimum: 0
- *         employeeRange:
- *           type: string
- *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
- *         companyDescription:
- *           type: string
- *           maxLength: 3000
  */
 export interface IOferta {
   _id?: Types.ObjectId;

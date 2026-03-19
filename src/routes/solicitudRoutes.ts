@@ -19,6 +19,59 @@ const router = Router();
 
 /**
  * @openapi
+ * components:
+ *   schemas:
+ *     CreateSolicitud:
+ *       type: object
+ *       required:
+ *         - owner
+ *         - interestedUser
+ *         - opportunity
+ *       properties:
+ *         owner:
+ *           type: string
+ *           description: ID de l'usuari propietari
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         interestedUser:
+ *           type: string
+ *           description: ID de l'usuari interessat
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
+ *         opportunity:
+ *           type: string
+ *           description: ID de l'oferta
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
+ *         message:
+ *           type: string
+ *           maxLength: 1000
+ *           example: 'I am interested in this opportunity.'
+ *
+ *     UpdateSolicitud:
+ *       type: object
+ *       properties:
+ *         owner:
+ *           type: string
+ *           description: ID de l'usuari propietari
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         interestedUser:
+ *           type: string
+ *           description: ID de l'usuari interessat
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
+ *         opportunity:
+ *           type: string
+ *           description: ID de l'oferta
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
+ *         status:
+ *           type: string
+ *           enum: [PENDING, ACCEPTED, REJECTED]
+ *           example: 'ACCEPTED'
+ *         message:
+ *           type: string
+ *           maxLength: 1000
+ *           example: 'Updated message'
+ */
+
+/**
+ * @openapi
  * /api/solicitudes:
  *   get:
  *     summary: Obté la llista completa de sol·licituds
@@ -76,6 +129,11 @@ router.get('/:id', validate({ params: solicitudIdParamsSchema }), solicitudContr
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CreateSolicitud'
+ *           example:
+ *             owner: 64f1a2b3c4d5e6f7a8b9c0d1
+ *             interestedUser: 64f1a2b3c4d5e6f7a8b9c0d2
+ *             opportunity: 64f1a2b3c4d5e6f7a8b9c0d3
+ *             message: I am interested in this opportunity.
  *     responses:
  *       201:
  *         description: Sol·licitud creada correctament
@@ -109,6 +167,9 @@ router.post('/', validate({ body: createSolicitudSchema }), solicitudController.
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/UpdateSolicitud'
+ *           example:
+ *             status: ACCEPTED
+ *             message: Updated message
  *     responses:
  *       200:
  *         description: Sol·licitud actualitzada correctament
