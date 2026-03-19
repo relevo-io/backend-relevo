@@ -113,3 +113,26 @@ export const patchEstadoSolicitud = async (
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+
+// solicitudController.ts
+
+export const deleteMultiple = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body; // Recibimos el array de IDs ['id1', 'id2'...]
+
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ message: 'Se requiere un array de IDs' });
+    }
+
+    // Borramos todos los que coincidan con los IDs del array
+    await SolicitudModel.deleteMany({
+      _id: { $in: ids }
+    });
+
+    res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
+  } catch (error) {
+    console.error('Error en deleteMultiple:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};

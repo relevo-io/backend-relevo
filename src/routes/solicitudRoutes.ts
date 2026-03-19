@@ -90,6 +90,8 @@ const router = Router();
  */
 router.get('/', solicitudController.getSolicitudes);
 
+router.post('/delete-multiple', solicitudController.deleteMultiple);
+
 /**
  * @openapi
  * /api/solicitudes/{id}:
