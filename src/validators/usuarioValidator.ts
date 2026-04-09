@@ -4,8 +4,16 @@ import { userRoles } from '../models/usuarioModel.js';
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
 const objectIdSchema = z.string().regex(objectIdRegex, 'El id debe tener formato ObjectId válido');
 
+const rolesSchema = z
+  .array(z.enum(userRoles, { message: 'Rol inválido' }))
+  .min(1, 'Debes enviar al menos un rol')
+  .max(2, 'Máximo dos roles por usuario')
+  .refine((roles) => new Set(roles).size === roles.length, {
+    message: 'No se permiten roles duplicados'
+  });
+
 const usuarioBaseSchema = z.object({
-  role: z.enum(userRoles, { message: 'Rol inválido' }),
+  roles: rolesSchema,
   fullName: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(120),
   email: z.string().trim().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
@@ -18,7 +26,27 @@ const usuarioBaseSchema = z.object({
 
 export const createUsuarioSchema = usuarioBaseSchema.strict();
 
+const publicRolesSchema = z
+  .array(z.enum(['OWNER', 'INTERESTED']))
+  .min(1, 'Debes enviar al menos un rol')
+  .max(2, 'Maximo dos roles por usuario')
+  .refine((roles) => new Set(roles).size === roles.length, {
+    message: 'No se permiten roles duplicados'
+  });
+
+export const createUsuarioPublicSchema = usuarioBaseSchema
+  .extend({ roles: publicRolesSchema })
+  .strict();
+
 export const updateUsuarioSchema = usuarioBaseSchema
+  .partial()
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Debes enviar al menos un campo para actualizar'
+  });
+
+export const updateUsuarioSelfSchema = usuarioBaseSchema
+  .omit({ roles: true })
   .partial()
   .strict()
   .refine((data) => Object.keys(data).length > 0, {

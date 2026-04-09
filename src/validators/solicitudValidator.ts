@@ -11,18 +11,12 @@ export const solicitudIdParamsSchema = z.object({
 });
 
 export const createSolicitudSchema = z.object({
-  opportunityId: z.string().length(24, "ID de oferta inválido"), // Angular envía 'opportunityId'
-  interestedUserId: z.string().length(24, "ID de usuario inválido"), // Angular envía 'interestedUserId'
+  opportunityId: z.string().length(24, 'ID de oferta invalido'),
   message: z.string().max(1000).optional()
 });
 
-
 export const updateSolicitudSchema = z
   .object({
-    owner: objectIdSchema.optional(),
-    interestedUser: objectIdSchema.optional(),
-    opportunity: objectIdSchema.optional(),
-    status: statusSchema.optional(),
     message: z.string().max(1000).optional()
   })
   .strict()

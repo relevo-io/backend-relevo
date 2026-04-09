@@ -1,9 +1,11 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { apiPort } from './config.js';
 import usuarioRoutes from './routes/usuarioRoutes.js';
 import ofertaRoutes from './routes/ofertaRoutes.js';
 import solicitudRoutes from './routes/solicitudRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.js';
@@ -25,6 +27,7 @@ app.use(cors());
 
 // Built-in middleware to parse incoming requests with JSON payloads
 app.use(express.json());
+app.use(cookieParser());
 
 // Logging middleware: Logs every incoming HTTP request using Pino
 app.use(httpLogger);
@@ -48,6 +51,7 @@ app.get('/ping', (_req: Request, res: Response) => {
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/ofertas', ofertaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
+app.use('/api/auth', authRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)
@@ -63,3 +67,4 @@ app.use((req, res) => {
 });
 
 export default app; // Default export for the server entry point
+

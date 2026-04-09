@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { logger } from '../config.js';
 import { IOferta } from '../models/ofertaModel.js';
 import * as ofertaService from '../services/ofertaService.js';
+import { AuthRequest } from '../middlewares/auth.js';
 
 export const getOfertas = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -28,9 +29,17 @@ export const getOferta = async (req: Request<{ id: string }>, res: Response): Pr
   }
 };
 
-export const createOferta = async (req: Request<{}, {}, Partial<IOferta>>, res: Response): Promise<void> => {
+export const createOferta = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const nuevaOferta = await ofertaService.crearOferta(req.body);
+    if (!req.user) {
+      res.status(401).json({ message: 'No autenticado' });
+      return;
+    }
+
+    const nuevaOferta = await ofertaService.crearOferta({
+      ...req.body,
+      owner: req.user.id as any
+    });
     res.status(201).json(nuevaOferta);
   } catch (error) {
     logger.error(error, 'Error creando oferta');
@@ -43,7 +52,8 @@ export const updateOferta = async (
   res: Response
 ): Promise<void> => {
   try {
-    const ofertaActualizada = await ofertaService.actualizarOferta(req.params.id, req.body);
+    const { owner, ...safeData } = req.body as any;
+    const ofertaActualizada = await ofertaService.actualizarOferta(req.params.id, safeData);
     if (!ofertaActualizada) {
       res.status(404).json({ message: 'Oferta no encontrada' });
       return;

@@ -8,7 +8,6 @@ const ofertaBaseSchema = z.object({
   region: z.string().trim().min(1, 'La region es obligatoria'),
   sector: z.string().trim().min(1, 'El sector es obligatorio'),
   revenueRange: z.enum(revenueRanges).optional(),
-  owner: objectIdSchema,
   businessAgeYears: z.number().min(0, 'businessAgeYears no puede ser negativo').optional(),
   employeeRange: z.enum(employeeRanges).optional(),
   companyDescription: z.string().trim().min(1, 'La descripcion es obligatoria').max(3000)

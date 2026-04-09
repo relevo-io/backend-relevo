@@ -26,7 +26,7 @@ export async function seedingDatabase(): Promise<void> {
 
         const usersData: IUsuario[] = [
             {
-                role: 'OWNER',
+                roles: ['OWNER'],
                 fullName: 'Marc Sanchez',
                 email: 'm@test.com',
                 password: 'secret123',
@@ -36,7 +36,7 @@ export async function seedingDatabase(): Promise<void> {
                 preferredRegions: ['Madrid', 'Barcelona']
             },
             {
-                role: 'INTERESTED',
+                roles: ['INTERESTED'],
                 fullName: 'Anna Lopez',
                 email: 'a@test.com',
                 password: 'secret123',
@@ -46,7 +46,7 @@ export async function seedingDatabase(): Promise<void> {
                 preferredRegions: ['Valencia']
             },
             {
-                role: 'INTERESTED',
+                roles: ['INTERESTED', 'OWNER'],
                 fullName: 'John Miller',
                 email: 'j@test.com',
                 password: 'secret123',

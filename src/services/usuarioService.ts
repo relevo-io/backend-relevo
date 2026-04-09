@@ -5,7 +5,7 @@ export const crearUsuario = async (data: Partial<IUsuario>): Promise<IUsuario> =
 };
 
 export const obtenerUsuarioPorId = async (id: string): Promise<IUsuario | null> => {
-  return await UsuarioModel.findById(id).lean();
+  return await UsuarioModel.findById(id).select('-password').lean();
 };
 
 export const actualizarUsuario = async (id: string, data: Partial<IUsuario>): Promise<IUsuario | null> => {
@@ -37,5 +37,5 @@ export const actualizarVisibilidadUsuarios = async (ids: string[],visible: boole
 };
 
 export const listarUsuarios = async (): Promise<IUsuario[]> => {
-  return await UsuarioModel.find().lean();
+  return await UsuarioModel.find().select('-password').lean();
 };

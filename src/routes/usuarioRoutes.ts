@@ -1,14 +1,15 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import * as usuarioController from '../controllers/usuarioController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
-	createUsuarioSchema,
+	createUsuarioPublicSchema,
 	deleteManyUsuariosSchema,
-	updateUsuarioSchema,
+	updateUsuarioSelfSchema,
 	updateManyUsuariosVisibilitySchema,
 	usuarioIdParamsSchema,
 	updateUsuarioVisibilitySchema
 } from '../validators/usuarioValidator.js';
+import { authenticateToken, authorizeRoles, authorizeSelfOrAdmin } from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -47,7 +48,7 @@ const router = Router();
  *           example: 'secret123'
  *         role:
  *           type: string
- *           enum: [OWNER, INTERESTED]
+ *           enum: [OWNER, INTERESTED, ADMIN]
  *           example: 'INTERESTED'
  *         location:
  *           type: string
@@ -83,7 +84,7 @@ const router = Router();
  *           format: password
  *         role:
  *           type: string
- *           enum: [OWNER, INTERESTED]
+ *           enum: [OWNER, INTERESTED, ADMIN]
  *         location:
  *           type: string
  *           maxLength: 120
@@ -105,8 +106,10 @@ const router = Router();
  * @openapi
  * /api/usuarios:
  *   get:
- *     summary: Obtiene la lista completa de usuarios
+ *     summary: Obtiene la lista completa de usuarios (solo ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de usuarios recuperada exitosamente
@@ -119,14 +122,16 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/', usuarioController.getUsuarios);
+router.get('/', authenticateToken, authorizeRoles('ADMIN'), usuarioController.getUsuarios);
 
 /**
  * @openapi
  * /api/usuarios/{id}:
  *   get:
- *     summary: Obtiene un usuario específico por su ID
+ *     summary: Obtiene un usuario específico por su ID (self o ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -144,7 +149,7 @@ router.get('/', usuarioController.getUsuarios);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id', validate({ params: usuarioIdParamsSchema }), usuarioController.getUsuario);
+router.get('/:id', authenticateToken, authorizeSelfOrAdmin('id'), validate({ params: usuarioIdParamsSchema }), usuarioController.getUsuario);
 
 /**
  * @openapi
@@ -164,14 +169,16 @@ router.get('/:id', validate({ params: usuarioIdParamsSchema }), usuarioControlle
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', validate({ body: createUsuarioSchema }), usuarioController.createUsuario);
+router.post('/', validate({ body: createUsuarioPublicSchema }), usuarioController.createUsuario);
 
 /**
  * @openapi
  * /api/usuarios/batch:
  *   delete:
- *     summary: Elimina múltiples usuarios por una lista de IDs
+ *     summary: Elimina múltiples usuarios por una lista de IDs (solo ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -208,14 +215,16 @@ router.post('/', validate({ body: createUsuarioSchema }), usuarioController.crea
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete('/batch', validate({ body: deleteManyUsuariosSchema }), usuarioController.deleteManyUsuarios);
+router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), validate({ body: deleteManyUsuariosSchema }), usuarioController.deleteManyUsuarios);
 
 /**
  * @openapi
  * /api/usuarios/batch/visibility:
  *   patch:
- *     summary: Cambia la visibilidad de múltiples usuarios
+ *     summary: Cambia la visibilidad de múltiples usuarios (solo ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -262,6 +271,8 @@ router.delete('/batch', validate({ body: deleteManyUsuariosSchema }), usuarioCon
  */
 router.patch(
 	'/batch/visibility',
+	authenticateToken,
+	authorizeRoles('ADMIN'),
 	validate({ body: updateManyUsuariosVisibilitySchema }),
 	usuarioController.patchManyUsuariosVisibility
 );
@@ -270,8 +281,10 @@ router.patch(
  * @openapi
  * /api/usuarios/{id}/visibility:
  *   patch:
- *     summary: Cambia la visibilidad de un usuario
+ *     summary: Cambia la visibilidad de un usuario (self o ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -307,6 +320,8 @@ router.patch(
  */
 router.patch(
 	'/:id/visibility',
+	authenticateToken,
+	authorizeSelfOrAdmin('id'),
 	validate({
 		params: usuarioIdParamsSchema,
 		body: updateUsuarioVisibilitySchema
@@ -318,8 +333,10 @@ router.patch(
  * @openapi
  * /api/usuarios/{id}:
  *   put:
- *     summary: Actualiza los datos de un usuario por su ID
+ *     summary: Actualiza los datos de un usuario por su ID (self o ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -342,8 +359,10 @@ router.patch(
  * @openapi
  * /api/usuarios/{id}:
  *   delete:
- *     summary: Elimina un usuario por su ID
+ *     summary: Elimina un usuario por su ID (self o ADMIN)
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -358,13 +377,16 @@ router.patch(
  */
 router.put(
 	'/:id',
+	authenticateToken,
+	authorizeSelfOrAdmin('id'),
 	validate({
 		params: usuarioIdParamsSchema,
-		body: updateUsuarioSchema
+		body: updateUsuarioSelfSchema
 	}),
 	usuarioController.updateUsuario
 );
 
-router.delete('/:id', validate({ params: usuarioIdParamsSchema }), usuarioController.deleteUsuario);
+router.delete('/:id', authenticateToken, authorizeSelfOrAdmin('id'), validate({ params: usuarioIdParamsSchema }), usuarioController.deleteUsuario);
 
 export default router;
+

@@ -11,8 +11,10 @@
     "validate": "npm run lint && npm run check"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.11",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.0.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
@@ -21,8 +23,10 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.1",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",

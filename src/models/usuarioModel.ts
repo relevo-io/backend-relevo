@@ -1,7 +1,7 @@
 import { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-export const userRoles = ['OWNER', 'INTERESTED'] as const;
+export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
 
 const SALT_ROUNDS = 12;
 
@@ -19,7 +19,7 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *         - fullName
  *         - email
  *         - password
- *         - role
+ *         - roles
  *       properties:
  *         _id:
  *           type: string
@@ -40,10 +40,14 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           minLength: 6
  *           format: password
  *           example: '********'
- *         role:
- *           type: string
- *           enum: [OWNER, INTERESTED]
- *           example: 'INTERESTED'
+ *         roles:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [OWNER, INTERESTED, ADMIN]
+ *           minItems: 1
+ *           maxItems: 2
+ *           example: ['INTERESTED']
  *         location:
  *           type: string
  *           maxLength: 120
@@ -74,7 +78,7 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  */
 export interface IUsuario {
   _id?: Types.ObjectId;
-  role: (typeof userRoles)[number];
+  roles: Array<(typeof userRoles)[number]>;
   fullName: string;
   email: string;
   password: string;
@@ -89,10 +93,20 @@ export interface IUsuario {
 
 const usuarioSchema = new Schema<IUsuario>(
   {
-    role: {
-      type: String,
+    roles: {
+      type: [String],
       enum: userRoles,
-      required: true
+      required: true,
+      validate: [
+        {
+          validator: (roles: string[]) => Array.isArray(roles) && roles.length >= 1 && roles.length <= 2,
+          message: 'Debe contener entre 1 y 2 roles'
+        },
+        {
+          validator: (roles: string[]) => new Set(roles).size === roles.length,
+          message: 'No se permiten roles duplicados'
+        }
+      ]
     },
     fullName: {
       type: String,

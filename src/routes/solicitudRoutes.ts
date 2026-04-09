@@ -7,6 +7,12 @@ import {
 	updateSolicitudSchema,
 	updateSolicitudStatusSchema
 } from '../validators/solicitudValidator.js';
+import {
+	authenticateToken,
+	authorizeRoles,
+	authorizeSolicitudOwnerOrAdmin,
+	authorizeSolicitudParticipantOrAdmin
+} from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -24,21 +30,11 @@ const router = Router();
  *     CreateSolicitud:
  *       type: object
  *       required:
- *         - owner
- *         - interestedUser
- *         - opportunity
+ *         - opportunityId
  *       properties:
- *         owner:
+ *         opportunityId:
  *           type: string
- *           description: ID de l'usuari propietari
- *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         interestedUser:
- *           type: string
- *           description: ID de l'usuari interessat
- *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
- *         opportunity:
- *           type: string
- *           description: ID de l'oferta
+ *           description: ID de la oferta
  *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
  *         message:
  *           type: string
@@ -76,6 +72,8 @@ const router = Router();
  *   get:
  *     summary: Obté la llista completa de sol·licituds
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Llista de sol·licituds recuperada correctament
@@ -88,9 +86,39 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/', solicitudController.getSolicitudes);
+router.get('/', authenticateToken, authorizeRoles('ADMIN'), solicitudController.getSolicitudes);
 
-router.post('/delete-multiple', solicitudController.deleteMultiple);
+/**
+ * @openapi
+ * /api/solicitudes/batch:
+ *   delete:
+ *     summary: Elimina múltiples solicitudes por una lista de IDs
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Borrado múltiple ejecutado
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), solicitudController.deleteMultiple);
 
 /**
  * @openapi
@@ -98,6 +126,8 @@ router.post('/delete-multiple', solicitudController.deleteMultiple);
  *   get:
  *     summary: Obté una sol·licitud per ID
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -117,7 +147,7 @@ router.post('/delete-multiple', solicitudController.deleteMultiple);
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/:id', validate({ params: solicitudIdParamsSchema }), solicitudController.getSolicitud);
+router.get('/:id', authenticateToken, authorizeSolicitudOwnerOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.getSolicitud);
 
 /**
  * @openapi
@@ -125,6 +155,8 @@ router.get('/:id', validate({ params: solicitudIdParamsSchema }), solicitudContr
  *   post:
  *     summary: Crea una nova sol·licitud
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -132,9 +164,7 @@ router.get('/:id', validate({ params: solicitudIdParamsSchema }), solicitudContr
  *           schema:
  *             $ref: '#/components/schemas/CreateSolicitud'
  *           example:
- *             owner: 64f1a2b3c4d5e6f7a8b9c0d1
- *             interestedUser: 64f1a2b3c4d5e6f7a8b9c0d2
- *             opportunity: 64f1a2b3c4d5e6f7a8b9c0d3
+ *             opportunityId: 64f1a2b3c4d5e6f7a8b9c0d3
  *             message: I am interested in this opportunity.
  *     responses:
  *       201:
@@ -148,14 +178,16 @@ router.get('/:id', validate({ params: solicitudIdParamsSchema }), solicitudContr
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', validate({ body: createSolicitudSchema }), solicitudController.createSolicitud);
+router.post('/', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), validate({ body: createSolicitudSchema }), solicitudController.createSolicitud);
 
 /**
  * @openapi
- * /api/solicitudes/{id}:
- *   put:
+ * /api/solicitudes/{id}/message:
+ *   patch:
  *     summary: Actualitza una sol·licitud per ID
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -186,8 +218,10 @@ router.post('/', validate({ body: createSolicitudSchema }), solicitudController.
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.put(
-	'/:id',
+router.patch(
+	'/:id/message',
+	authenticateToken,
+	authorizeSolicitudOwnerOrAdmin,
 	validate({
 		params: solicitudIdParamsSchema,
 		body: updateSolicitudSchema
@@ -201,6 +235,8 @@ router.put(
  *   delete:
  *     summary: Elimina una sol·licitud per ID
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -216,7 +252,7 @@ router.put(
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete('/:id', validate({ params: solicitudIdParamsSchema }), solicitudController.deleteSolicitud);
+router.delete('/:id', authenticateToken, authorizeSolicitudParticipantOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.deleteSolicitud);
 
 /**
  * @openapi
@@ -224,6 +260,8 @@ router.delete('/:id', validate({ params: solicitudIdParamsSchema }), solicitudCo
  *   patch:
  *     summary: Canvia l'estat d'una sol·licitud
  *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -261,6 +299,8 @@ router.delete('/:id', validate({ params: solicitudIdParamsSchema }), solicitudCo
  */
 router.patch(
 	'/:id/status',
+	authenticateToken,
+	authorizeSolicitudOwnerOrAdmin,
 	validate({
 		params: solicitudIdParamsSchema,
 		body: updateSolicitudStatusSchema
@@ -269,3 +309,4 @@ router.patch(
 );
 
 export default router;
+
