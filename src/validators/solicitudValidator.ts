@@ -36,7 +36,14 @@ export const updateSolicitudStatusSchema = z
   })
   .strict();
 
+export const deleteManySolicitudesSchema = z
+  .object({
+    ids: z.array(objectIdSchema).min(1, 'Debes enviar al menos un ID')
+  })
+  .strict();
+
 export type SolicitudIdParams = z.infer<typeof solicitudIdParamsSchema>;
 export type CreateSolicitudBody = z.infer<typeof createSolicitudSchema>;
 export type UpdateSolicitudBody = z.infer<typeof updateSolicitudSchema>;
 export type UpdateSolicitudStatusBody = z.infer<typeof updateSolicitudStatusSchema>;
+export type DeleteManySolicitudesBody = z.infer<typeof deleteManySolicitudesSchema>;

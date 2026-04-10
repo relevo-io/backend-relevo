@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { logger } from '../config.js';
-import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
+import { ISolicitud } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
+import { DeleteManySolicitudesBody } from '../validators/solicitudValidator.js';
 
 export const getSolicitudes = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -92,22 +93,22 @@ export const patchEstadoSolicitud = async (
   }
 };
 
-export const deleteMultiple = async (req: Request, res: Response) => {
+export const deleteMultiple = async (
+  req: Request<{}, {}, DeleteManySolicitudesBody>,
+  res: Response
+): Promise<void> => {
   try {
-    const { ids } = req.body;
 
-    if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ message: 'Se requiere un array de IDs' });
-    }
+    const deletedCount = await solicitudService.eliminarSolicitudesPorIds(req.body.ids);
 
-    await SolicitudModel.deleteMany({
-      _id: { $in: ids }
+    res.status(200).json({
+      message: 'Borrado multiple ejecutado',
+      requestedCount: req.body.ids.length,
+      deletedCount
     });
-
-    res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
   } catch (error) {
-    console.error('Error en deleteMultiple:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    logger.error(error, 'Error en borrado multiple de solicitudes');
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 

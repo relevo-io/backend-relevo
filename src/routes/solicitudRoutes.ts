@@ -3,6 +3,7 @@ import * as solicitudController from '../controllers/solicitudController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
 	createSolicitudSchema,
+	deleteManySolicitudesSchema,
 	solicitudIdParamsSchema,
 	updateSolicitudSchema,
 	updateSolicitudStatusSchema
@@ -90,7 +91,7 @@ const router = Router();
  */
 router.get('/', solicitudController.getSolicitudes);
 
-router.post('/delete-multiple', solicitudController.deleteMultiple);
+router.post('/delete-multiple', validate({ body: deleteManySolicitudesSchema }), solicitudController.deleteMultiple);
 
 /**
  * @openapi

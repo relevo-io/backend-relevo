@@ -1,15 +1,6 @@
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
 
 export const crearSolicitud = async (data: Partial<ISolicitud>): Promise<ISolicitud> => {
-  const yaExiste = await SolicitudModel.findOne({
-    opportunity: data.opportunity,
-    interestedUser: data.interestedUser
-  }).lean();
-
-  if (yaExiste) {
-    throw new Error('Solicitud ya existente para esta oferta');
-  }
-
   return await new SolicitudModel(data).save();
 };
 
@@ -23,6 +14,11 @@ export const actualizarSolicitud = async (id: string, data: Partial<ISolicitud>)
 
 export const eliminarSolicitud = async (id: string): Promise<ISolicitud | null> => {
   return await SolicitudModel.findByIdAndDelete(id).lean();
+};
+
+export const eliminarSolicitudesPorIds = async (ids: string[]): Promise<number> => {
+  const result = await SolicitudModel.deleteMany({ _id: { $in: ids } });
+  return result.deletedCount ?? 0;
 };
 
 export const listarSolicitudes = async (): Promise<ISolicitud[]> => {
