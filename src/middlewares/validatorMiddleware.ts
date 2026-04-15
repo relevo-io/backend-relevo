@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z, ZodError } from 'zod';
 import { logger } from '../config.js';
+import { ValidationError } from '../utils/AppError.js';
 
 type ValidationSchemas = {
   body?: z.ZodTypeAny;
@@ -32,18 +33,15 @@ export const validate = (schemas: ValidationSchemas) =>
       if (error instanceof ZodError) {
         logger.warn('Validation error on %s %s', req.method, req.url);
         
-        res.status(400).json({
-          message: "Validation failed",
-          // Usamos .issues para mapear los errores detallados
-          errors: error.issues.map(err => ({
-            field: err.path.join('.'), // Une caminos anidados (ej: 'user.name')
-            message: err.message
-          }))
-        });
+        const details = error.issues.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+
+        next(new ValidationError('Validation failed', details));
         return;
       }
 
-      logger.error(error, 'Unexpected validation error');
-      res.status(500).json({ message: "Internal server error" });
+      next(error);
     }
   };

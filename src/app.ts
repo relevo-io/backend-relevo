@@ -6,6 +6,7 @@ import usuarioRoutes from './routes/usuarioRoutes.js';
 import ofertaRoutes from './routes/ofertaRoutes.js';
 import solicitudRoutes from './routes/solicitudRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.js';
@@ -65,6 +66,9 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use((req, res) => {
     res.status(404).json({ message: 'Resource not found' });
 });
+
+// Centralized error handler
+app.use(globalErrorHandler);
 
 export default app; // Default export for the server entry point
 

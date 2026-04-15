@@ -1,136 +1,96 @@
 import { Request, Response } from 'express';
-import { logger } from '../config.js';
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
 import { OfertaModel } from '../models/ofertaModel.js';
 import { AuthRequest } from '../middlewares/auth.js';
+import { asyncWrapper } from '../utils/asyncWrapper.js';
+import { NotFoundError, UnauthorizedError, ValidationError } from '../utils/AppError.js';
 
-export const getSolicitudes = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const solicitudes = await solicitudService.listarSolicitudes();
-    res.status(200).json(solicitudes);
-  } catch (error) {
-    logger.error(error, 'Error obteniendo solicitudes');
-    res.status(500).json({ message: 'Internal Server Error' });
+export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
+  const solicitudes = await solicitudService.listarSolicitudes();
+  res.status(200).json(solicitudes);
+});
+
+export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params.id);
+  if (!solicitud) {
+    throw new NotFoundError('Solicitud no encontrada');
   }
-};
 
-export const getSolicitud = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  try {
-    const solicitud = await solicitudService.obtenerSolicitudPorId(req.params.id);
-    if (!solicitud) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
-      return;
-    }
+  res.status(200).json(solicitud);
+});
 
-    res.status(200).json(solicitud);
-  } catch (error) {
-    logger.error(error, 'Error obteniendo solicitud %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const { opportunityId, message } = req.body;
+  const interestedUserId = req.user?.id;
+
+  if (!interestedUserId) {
+    throw new UnauthorizedError('No autenticado');
   }
-};
 
-export const createSolicitud = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { opportunityId, message } = req.body;
-    const interestedUserId = req.user?.id;
-
-    if (!interestedUserId) {
-      res.status(401).json({ message: 'No autenticado' });
-      return;
-    }
-
-    const oferta = await OfertaModel.findById(opportunityId);
-    if (!oferta) {
-      res.status(404).json({ message: 'Oferta no encontrada' });
-      return;
-    }
-
-    const nueva = await solicitudService.crearSolicitud({
-      opportunity: opportunityId,
-      interestedUser: interestedUserId,
-      owner: oferta.owner,
-      message
-    } as any);
-
-    const resultado = await SolicitudModel.findById(nueva._id)
-      .populate('opportunity')
-      .populate('interestedUser')
-      .lean();
-
-    res.status(201).json(resultado);
-  } catch (error) {
-    logger.error(error, 'Error en createSolicitud');
-    res.status(500).json({ message: 'Error interno', error: (error as Error).message });
+  const oferta = await OfertaModel.findById(opportunityId);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
   }
-};
 
-export const updateSolicitud = async (
+  const nueva = await solicitudService.crearSolicitud({
+    opportunity: opportunityId,
+    interestedUser: interestedUserId,
+    owner: oferta.owner,
+    message
+  } as any);
+
+  const resultado = await SolicitudModel.findById(nueva._id)
+    .populate('opportunity')
+    .populate('interestedUser')
+    .lean();
+
+  res.status(201).json(resultado);
+});
+
+export const updateSolicitud = asyncWrapper(async (
   req: Request<{ id: string }, {}, Partial<ISolicitud>>,
   res: Response
-): Promise<void> => {
-  try {
-    const solicitudActualizada = await solicitudService.actualizarSolicitud(req.params.id, req.body);
-    if (!solicitudActualizada) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
-      return;
-    }
-
-    res.status(200).json(solicitudActualizada);
-  } catch (error) {
-    logger.error(error, 'Error actualizando solicitud %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+) => {
+  const solicitudActualizada = await solicitudService.actualizarSolicitud(req.params.id, req.body);
+  if (!solicitudActualizada) {
+    throw new NotFoundError('Solicitud no encontrada');
   }
-};
 
-export const deleteSolicitud = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  try {
-    const eliminada = await solicitudService.eliminarSolicitud(req.params.id);
-    if (!eliminada) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
-      return;
-    }
+  res.status(200).json(solicitudActualizada);
+});
 
-    res.status(204).send();
-  } catch (error) {
-    logger.error(error, 'Error eliminando solicitud %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+  const eliminada = await solicitudService.eliminarSolicitud(req.params.id);
+  if (!eliminada) {
+    throw new NotFoundError('Solicitud no encontrada');
   }
-};
 
-export const patchEstadoSolicitud = async (
+  res.status(204).send();
+});
+
+export const patchEstadoSolicitud = asyncWrapper(async (
   req: Request<{ id: string }, {}, Pick<ISolicitud, 'status'>>,
   res: Response
-): Promise<void> => {
-  try {
-    const solicitudActualizada = await solicitudService.actualizarEstadoSolicitud(req.params.id, req.body.status);
-    if (!solicitudActualizada) {
-      res.status(404).json({ message: 'Solicitud no encontrada' });
-      return;
-    }
-
-    res.status(200).json(solicitudActualizada);
-  } catch (error) {
-    logger.error(error, 'Error actualizando estado de solicitud %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+) => {
+  const solicitudActualizada = await solicitudService.actualizarEstadoSolicitud(req.params.id, req.body.status);
+  if (!solicitudActualizada) {
+    throw new NotFoundError('Solicitud no encontrada');
   }
-};
 
-export const deleteMultiple = async (req: Request, res: Response) => {
-  try {
-    const { ids } = req.body;
+  res.status(200).json(solicitudActualizada);
+});
 
-    if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ message: 'Se requiere un array de IDs' });
-    }
+export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) => {
+  const { ids } = req.body;
 
-    await SolicitudModel.deleteMany({
-      _id: { $in: ids }
-    });
-
-    res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
-  } catch (error) {
-    console.error('Error en deleteMultiple:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+  if (!ids || !Array.isArray(ids)) {
+    throw new ValidationError('Se requiere un array de IDs');
   }
-};
+
+  await SolicitudModel.deleteMany({
+    _id: { $in: ids }
+  });
+
+  res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
+});

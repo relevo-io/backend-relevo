@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { logger } from '../config.js';
 import { IUsuario } from '../models/usuarioModel.js';
 import * as usuarioService from '../services/usuarioService.js';
 import {
@@ -7,128 +6,86 @@ import {
   UpdateManyUsuariosVisibilityBody,
   UpdateUsuarioVisibilityBody
 } from '../validators/usuarioValidator.js';
+import { asyncWrapper } from '../utils/asyncWrapper.js';
+import { NotFoundError } from '../utils/AppError.js';
 
-export const getUsuarios = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const usuarios = await usuarioService.listarUsuarios();
-    res.status(200).json(usuarios);
-  } catch (error) {
-    logger.error(error, 'Error obteniendo usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
+export const getUsuarios = asyncWrapper(async (_req: Request, res: Response) => {
+  const usuarios = await usuarioService.listarUsuarios();
+  res.status(200).json(usuarios);
+});
+
+export const getUsuario = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+  const usuario = await usuarioService.obtenerUsuarioPorId(req.params.id);
+  if (!usuario) {
+    throw new NotFoundError('Usuario no encontrado');
   }
-};
 
-export const getUsuario = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  try {
-    const usuario = await usuarioService.obtenerUsuarioPorId(req.params.id);
-    if (!usuario) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
-      return;
-    }
+  res.status(200).json(usuario);
+});
 
-    res.status(200).json(usuario);
-  } catch (error) {
-    logger.error(error, 'Error obteniendo usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
+export const createUsuario = asyncWrapper(async (req: Request<{}, {}, Partial<IUsuario>>, res: Response) => {
+  const nuevoUsuario = await usuarioService.crearUsuario(req.body);
+  res.status(201).json(nuevoUsuario);
+});
 
-export const createUsuario = async (req: Request<{}, {}, Partial<IUsuario>>, res: Response): Promise<void> => {
-  try {
-    const nuevoUsuario = await usuarioService.crearUsuario(req.body);
-    res.status(201).json(nuevoUsuario);
-  } catch (error) {
-    logger.error(error, 'Error creando usuario');
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
-
-export const updateUsuario = async (
+export const updateUsuario = asyncWrapper(async (
   req: Request<{ id: string }, {}, Partial<IUsuario>>,
   res: Response
-): Promise<void> => {
-  try {
-    const usuarioActualizado = await usuarioService.actualizarUsuario(req.params.id, req.body);
-    if (!usuarioActualizado) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
-      return;
-    }
-
-    res.status(200).json(usuarioActualizado);
-  } catch (error) {
-    logger.error(error, 'Error actualizando usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+) => {
+  const usuarioActualizado = await usuarioService.actualizarUsuario(req.params.id, req.body);
+  if (!usuarioActualizado) {
+    throw new NotFoundError('Usuario no encontrado');
   }
-};
 
-export const deleteUsuario = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  try {
-    const eliminado = await usuarioService.eliminarUsuario(req.params.id);
-    if (!eliminado) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
-      return;
-    }
+  res.status(200).json(usuarioActualizado);
+});
 
-    res.status(204).send();
-  } catch (error) {
-    logger.error(error, 'Error eliminando usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+export const deleteUsuario = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+  const eliminado = await usuarioService.eliminarUsuario(req.params.id);
+  if (!eliminado) {
+    throw new NotFoundError('Usuario no encontrado');
   }
-};
 
-export const deleteManyUsuarios = async (
+  res.status(204).send();
+});
+
+export const deleteManyUsuarios = asyncWrapper(async (
   req: Request<{}, {}, DeleteManyUsuariosBody>,
   res: Response
-): Promise<void> => {
-  try {
-    const { ids } = req.body;
-    const deletedCount = await usuarioService.eliminarUsuariosPorIds(ids);
-    res.status(200).json({
-      message: 'Borrado múltiple ejecutado',
-      requestedCount: ids.length,
-      deletedCount
-    });
-  } catch (error) {
-    logger.error(error, 'Error en borrado múltiple de usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
+) => {
+  const { ids } = req.body;
+  const deletedCount = await usuarioService.eliminarUsuariosPorIds(ids);
+  res.status(200).json({
+    message: 'Borrado múltiple ejecutado',
+    requestedCount: ids.length,
+    deletedCount
+  });
+});
 
-export const patchUsuarioVisibility = async (
+export const patchUsuarioVisibility = asyncWrapper(async (
   req: Request<{ id: string }, {}, UpdateUsuarioVisibilityBody>,
   res: Response
-): Promise<void> => {
-  try {
-    const usuario = await usuarioService.actualizarVisibilidadUsuario(req.params.id, req.body.visible);
-    if (!usuario) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
-      return;
-    }
-
-    res.status(200).json(usuario);
-  } catch (error) {
-    logger.error(error, 'Error actualizando visibilidad de usuario %s', req.params.id);
-    res.status(500).json({ message: 'Internal Server Error' });
+) => {
+  const usuario = await usuarioService.actualizarVisibilidadUsuario(req.params.id, req.body.visible);
+  if (!usuario) {
+    throw new NotFoundError('Usuario no encontrado');
   }
-};
 
-export const patchManyUsuariosVisibility = async (
+  res.status(200).json(usuario);
+});
+
+export const patchManyUsuariosVisibility = asyncWrapper(async (
   req: Request<{}, {}, UpdateManyUsuariosVisibilityBody>,
   res: Response
-): Promise<void> => {
-  try {
-    const { ids, visible } = req.body;
-    const { matchedCount, modifiedCount } = await usuarioService.actualizarVisibilidadUsuarios(ids, visible);
+) => {
+  const { ids, visible } = req.body;
+  const { matchedCount, modifiedCount } = await usuarioService.actualizarVisibilidadUsuarios(ids, visible);
 
-    res.status(200).json({
-      message: 'Visibilidad de usuarios actualizada',
-      requestedCount: ids.length,
-      matchedCount,
-      modifiedCount,
-      visible
-    });
-  } catch (error) {
-    logger.error(error, 'Error actualizando visibilidad múltiple de usuarios');
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
+  res.status(200).json({
+    message: 'Visibilidad de usuarios actualizada',
+    requestedCount: ids.length,
+    matchedCount,
+    modifiedCount,
+    visible
+  });
+});
