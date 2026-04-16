@@ -9,7 +9,7 @@ export const obtenerUsuarioPorId = async (id: string): Promise<IUsuario | null> 
 };
 
 export const actualizarUsuario = async (id: string, data: Partial<IUsuario>): Promise<IUsuario | null> => {
-  return await UsuarioModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  return await UsuarioModel.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
 };
 
 export const eliminarUsuario = async (id: string): Promise<IUsuario | null> => {
@@ -22,7 +22,7 @@ export const eliminarUsuariosPorIds = async (ids: string[]): Promise<number> => 
 };
 
 export const actualizarVisibilidadUsuario = async (id: string, visible: boolean): Promise<IUsuario | null> => {
-  return await UsuarioModel.findByIdAndUpdate(id, { visible }, { new: true }).lean();
+  return await UsuarioModel.findByIdAndUpdate(id, { visible }, { returnDocument: 'after' }).lean();
 };
 
 export const actualizarVisibilidadUsuarios = async (ids: string[],visible: boolean): Promise<{ matchedCount: number; modifiedCount: number }> => {

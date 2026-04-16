@@ -48,10 +48,10 @@ export const employeeRanges = [
  *           type: string
  *           description: ID de l'usuari propietari (referència a Usuario)
  *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         businessAgeYears:
+ *         creationYear:
  *           type: number
- *           minimum: 0
- *           example: 5
+ *           minimum: 1800
+ *           example: 2015
  *         employeeRange:
  *           type: string
  *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
@@ -79,7 +79,7 @@ export interface IOferta {
   sector: string;
   revenueRange?: (typeof revenueRanges)[number];
   owner: Types.ObjectId;
-  businessAgeYears?: number;
+  creationYear?: number;
   employeeRange?: (typeof employeeRanges)[number];
   companyDescription: string;
   publishedAt?: Date;
@@ -109,10 +109,10 @@ const ofertaSchema = new Schema<IOferta>(
       ref: 'Usuario',
       required: true
     },
-    businessAgeYears: {
+    creationYear: {
       type: Number,
       required: false,
-      min: 0
+      min: 1800
     },
     employeeRange: {
       type: String,

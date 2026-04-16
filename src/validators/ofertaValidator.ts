@@ -8,9 +8,10 @@ const ofertaBaseSchema = z.object({
   region: z.string().trim().min(1, 'La region es obligatoria'),
   sector: z.string().trim().min(1, 'El sector es obligatorio'),
   revenueRange: z.enum(revenueRanges).optional(),
-  businessAgeYears: z.number().min(0, 'businessAgeYears no puede ser negativo').optional(),
+  creationYear: z.number().min(1800, 'El año de creación no es válido').max(new Date().getFullYear(), 'El año no puede estar en el futuro').optional(),
   employeeRange: z.enum(employeeRanges).optional(),
-  companyDescription: z.string().trim().min(1, 'La descripcion es obligatoria').max(3000)
+  companyDescription: z.string().trim().min(1, 'La descripcion es obligatoria').max(3000),
+  owner: objectIdSchema.optional()
 });
 
 export const ofertaIdParamsSchema = z.object({

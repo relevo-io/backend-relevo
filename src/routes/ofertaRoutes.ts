@@ -42,9 +42,10 @@ const router = Router();
  *           type: string
  *           description: ID de l'usuari propietari (referencia a Usuario)
  *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         businessAgeYears:
+ *         creationYear:
  *           type: number
- *           minimum: 0
+ *           minimum: 1800
+ *           example: 2015
  *         employeeRange:
  *           type: string
  *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
@@ -66,9 +67,10 @@ const router = Router();
  *         owner:
  *           type: string
  *           description: ID de l'usuari propietari (referencia a Usuario)
- *         businessAgeYears:
+ *         creationYear:
  *           type: number
- *           minimum: 0
+ *           minimum: 1800
+ *           example: 2015
  *         employeeRange:
  *           type: string
  *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
@@ -141,7 +143,7 @@ router.get('/:id', validate({ params: ofertaIdParamsSchema }), ofertaController.
  *             sector: Tecnologia
  *             revenueRange: BETWEEN_100K_500K
  *             owner: 64f1a2b3c4d5e6f7a8b9c0d1
- *             businessAgeYears: 5
+ *             creationYear: 2019
  *             employeeRange: 11_25
  *             companyDescription: Empresa de tecnologia sostenible fundada el 2019.
  *     responses:

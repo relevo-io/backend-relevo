@@ -24,9 +24,12 @@ export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response)
     throw new UnauthorizedError('No autenticado');
   }
 
+  const isAdmin = req.user.roles.includes('ADMIN');
+  const ownerToSave = (isAdmin && req.body.owner) ? req.body.owner : req.user.id;
+
   const nuevaOferta = await ofertaService.crearOferta({
     ...req.body,
-    owner: req.user.id as any
+    owner: ownerToSave as any
   });
   res.status(201).json(nuevaOferta);
 });
@@ -35,8 +38,15 @@ export const updateOferta = asyncWrapper(async (
   req: Request<{ id: string }, {}, Partial<IOferta>>,
   res: Response
 ) => {
-  const { owner, ...safeData } = req.body as any;
-  const ofertaActualizada = await ofertaService.actualizarOferta(req.params.id, safeData);
+  const authReq = req as unknown as AuthRequest;
+  const isAdmin = authReq.user?.roles?.includes('ADMIN');
+  let dataToUpdate = { ...req.body } as any;
+
+  if (!isAdmin) {
+    delete dataToUpdate.owner;
+  }
+
+  const ofertaActualizada = await ofertaService.actualizarOferta(req.params.id, dataToUpdate);
   if (!ofertaActualizada) {
     throw new NotFoundError('Oferta no encontrada');
   }

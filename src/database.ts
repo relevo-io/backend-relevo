@@ -54,6 +54,16 @@ export async function seedingDatabase(): Promise<void> {
                 bio: 'Looking for international opportunities',
                 professionalBackground: 'Entrepreneur and operator',
                 preferredRegions: ['California', 'Texas']
+            },
+            {
+                roles: ['ADMIN'],
+                fullName: 'Admin Admin',
+                email: 'admin@test.com',
+                password: 'admin123',
+                location: 'Barcelona',
+                bio: 'System administrator of Relevo platform',
+                professionalBackground: 'Platform management and operations',
+                preferredRegions: ['Catalonia', 'Madrid']
             }
         ];
 
@@ -66,7 +76,7 @@ export async function seedingDatabase(): Promise<void> {
                 sector: 'Technology',
                 revenueRange: 'BETWEEN_100K_500K',
                 owner: createdUsers[0]._id,
-                businessAgeYears: 5,
+                creationYear: 2021,
                 employeeRange: '11_25',
                 companyDescription: 'Growing SaaS startup'
             },
@@ -75,7 +85,7 @@ export async function seedingDatabase(): Promise<void> {
                 sector: 'Hospitality',
                 revenueRange: 'UNDER_100K',
                 owner: createdUsers[1]._id,
-                businessAgeYears: 2,
+                creationYear: 2024,
                 employeeRange: '1_5',
                 companyDescription: 'Local restaurant with expansion potential'
             }
