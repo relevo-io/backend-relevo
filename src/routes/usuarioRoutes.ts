@@ -11,6 +11,7 @@ import {
 	updateUsuarioVisibilitySchema
 } from '../validators/usuarioValidator.js';
 import { authenticateToken, authorizeRoles, authorizeSelfOrAdmin } from '../middlewares/auth.js';
+import { validateUsuarioUpdateBody } from '../middlewares/usuarioMiddlewares.js';
 
 const router = Router();
 
@@ -380,21 +381,7 @@ router.put(
 	'/:id',
 	authenticateToken,
 	authorizeSelfOrAdmin('id'),
-	(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
-		const authReq = req as import('../middlewares/auth.js').AuthRequest;
-		const isAdmin = authReq.user?.roles.includes('ADMIN');
-		const schema = isAdmin ? updateUsuarioSchema : updateUsuarioSelfSchema;
-		const parsed = schema.safeParse(req.body);
-		if (!parsed.success) {
-			res.status(400).json({
-				message: 'Validation failed',
-				errors: parsed.error.issues.map((err: any) => ({ field: err.path.join('.'), message: err.message }))
-			});
-			return;
-		}
-		req.body = parsed.data;
-		next();
-	},
+	validateUsuarioUpdateBody,
 	validate({
 		params: usuarioIdParamsSchema
 	}),
