@@ -15,7 +15,7 @@ export const config = {
     jwt: {
         accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || "LlaveSecretaDefault",
         refreshSecret: process.env.JWT_REFRESH_SECRET || "LlaveRefreshDefault",
-        accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "1d",
+        accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "12h",
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d"
     },
     cookies: {

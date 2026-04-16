@@ -23,8 +23,11 @@ app.set('port', apiPort);
  * MIDDLEWARES
  */
 
-// Enable CORS for all routes 
-app.use(cors());
+// Enable CORS con credenciales para permitir cookies HttpOnly (Refresh Token)
+app.use(cors({
+    origin: 'http://localhost:4200',
+    credentials: true
+}));
 
 // Built-in middleware to parse incoming requests with JSON payloads
 app.use(express.json());
