@@ -1,0 +1,50 @@
+
+> ea-exercise-restapi@3.0 dev
+> tsx --watch src/index.ts
+
+Restarting 'src/index.ts'
+[14:15:36 UTC] [32mINFO[39m: [36mConnected to MongoDB[39m
+[14:15:36 UTC] [33mWARN[39m: [36mCleaning database collections...[39m
+[14:15:36 UTC] [32mINFO[39m: [36mSeeding initial data...[39m
+[14:15:37 UTC] [32mINFO[39m: [36mDatabase ready: 4 users created.[39m
+[14:15:37 UTC] [32mINFO[39m: [36mDatabase ready: 2 offers created.[39m
+[14:15:37 UTC] [32mINFO[39m: [36mDatabase ready: 2 requests created.[39m
+[14:15:37 UTC] [32mINFO[39m: [36m🚀 Server running on port 4000[39m
+[14:17:07 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:17:07 UTC] [32mINFO[39m: [36m<-- GET / 200 (7ms)[39m
+[14:17:07 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:17:07 UTC] [32mINFO[39m: [36m<-- GET / 200 (3ms)[39m
+[14:17:07 UTC] [32mINFO[39m: [36m--> GET /api/auth/me[39m
+[14:17:07 UTC] [33mWARN[39m: [36m[NOT_FOUND] Usuario no encontrado[39m
+[14:17:07 UTC] [33mWARN[39m: [36m<-- GET /api/auth/me 404 (6ms)[39m
+[14:17:07 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:17:07 UTC] [32mINFO[39m: [36m<-- GET / 304 (3ms)[39m
+[14:18:08 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:18:08 UTC] [32mINFO[39m: [36m<-- GET / 304 (5ms)[39m
+[14:18:47 UTC] [32mINFO[39m: [36m--> POST /api/auth/login[39m
+Restarting 'src/index.ts'
+[14:18:48 UTC] [32mINFO[39m: [36mConnected to MongoDB[39m
+[14:18:48 UTC] [33mWARN[39m: [36mCleaning database collections...[39m
+[14:18:48 UTC] [32mINFO[39m: [36mSeeding initial data...[39m
+[14:18:49 UTC] [32mINFO[39m: [36mDatabase ready: 4 users created.[39m
+[14:18:49 UTC] [32mINFO[39m: [36mDatabase ready: 2 offers created.[39m
+[14:18:49 UTC] [32mINFO[39m: [36mDatabase ready: 2 requests created.[39m
+[14:18:49 UTC] [32mINFO[39m: [36m🚀 Server running on port 4000[39m
+[14:19:05 UTC] [32mINFO[39m: [36m--> GET /[39m
+[14:19:05 UTC] [33mWARN[39m: [36m<-- GET / 404 (3ms)[39m
+[14:19:14 UTC] [32mINFO[39m: [36m--> POST /api/auth/login[39m
+[14:19:14 UTC] [32mINFO[39m: [36m<-- POST /login 200 (276ms)[39m
+[14:19:14 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:19:14 UTC] [32mINFO[39m: [36m<-- GET / 200 (6ms)[39m
+[14:19:19 UTC] [32mINFO[39m: [36m--> GET /api/usuarios[39m
+[14:19:19 UTC] [32mINFO[39m: [36m<-- GET / 200 (6ms)[39m
+[14:19:27 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:19:27 UTC] [32mINFO[39m: [36m--> GET /api/usuarios[39m
+[14:19:27 UTC] [32mINFO[39m: [36m<-- GET / 304 (7ms)[39m
+[14:19:27 UTC] [32mINFO[39m: [36m<-- GET / 304 (7ms)[39m
+[14:19:28 UTC] [32mINFO[39m: [36m--> GET /api/ofertas[39m
+[14:19:28 UTC] [32mINFO[39m: [36m--> GET /api/usuarios[39m
+[14:19:28 UTC] [32mINFO[39m: [36m--> GET /api/solicitudes[39m
+[14:19:28 UTC] [32mINFO[39m: [36m<-- GET / 304 (5ms)[39m
+[14:19:28 UTC] [32mINFO[39m: [36m<-- GET / 304 (5ms)[39m
+[14:19:28 UTC] [32mINFO[39m: [36m<-- GET / 200 (21ms)[39m

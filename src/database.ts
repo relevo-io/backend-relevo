@@ -67,7 +67,8 @@ export async function seedingDatabase(): Promise<void> {
             }
         ];
 
-        const createdUsers = await UsuarioModel.insertMany(usersData);
+        // Use create so usuarioSchema pre('save') hashes seeded passwords.
+        const createdUsers = await UsuarioModel.create(usersData);
         logger.info('Database ready: %d users created.', createdUsers.length);
 
         const ofertasData: IOferta[] = [
