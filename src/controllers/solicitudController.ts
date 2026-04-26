@@ -94,3 +94,21 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) =
 
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
 });
+
+export const getMisSolicitudes = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  // Buscamos las solicitudes donde el usuario logueado es el PROPIETARIO (owner)
+  const misSolicitudes = await SolicitudModel.find({ owner: userId })
+    .populate('interestedUser', 'nombre email') 
+    .populate('opportunity', 'companyDescription')
+    .sort({ createdAt: -1 }) // Las más recientes primero
+    .lean()
+    .exec();
+
+  res.status(200).json(misSolicitudes);
+});

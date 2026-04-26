@@ -122,6 +122,24 @@ router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), solicitudCon
 
 /**
  * @openapi
+ * /api/solicitudes/me:
+ *   get:
+ *     summary: Obté les sol·licituds rebudes pel propietari loguejat
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista de sol·licituds recuperada correctament
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/me', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), solicitudController.getMisSolicitudes);
+
+/**
+ * @openapi
  * /api/solicitudes/{id}:
  *   get:
  *     summary: Obté una sol·licitud per ID
