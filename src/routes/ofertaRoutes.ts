@@ -4,6 +4,7 @@ import { validate } from '../middlewares/validatorMiddleware.js';
 import {
 	createOfertaSchema,
 	ofertaIdParamsSchema,
+	ofertaQuerySchema,
 	updateOfertaSchema
 } from '../validators/ofertaValidator.js';
 import { authenticateToken, authorizeOfertaOwnerOrAdmin, authorizeRoles } from '../middlewares/auth.js';
@@ -52,6 +53,9 @@ const router = Router();
  *         companyDescription:
  *           type: string
  *           maxLength: 3000
+ *         extendedDescription:
+ *           type: string
+ *           maxLength: 10000
  *
  *     UpdateOferta:
  *       type: object
@@ -77,6 +81,9 @@ const router = Router();
  *         companyDescription:
  *           type: string
  *           maxLength: 3000
+ *         extendedDescription:
+ *           type: string
+ *           maxLength: 10000
  */
 
 /**
@@ -97,7 +104,7 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/', ofertaController.getOfertas);
+router.get('/', validate({ query: ofertaQuerySchema }), ofertaController.getOfertas);
 
 /**
  * @openapi
@@ -146,6 +153,7 @@ router.get('/:id', validate({ params: ofertaIdParamsSchema }), ofertaController.
  *             creationYear: 2019
  *             employeeRange: 11_25
  *             companyDescription: Empresa de tecnologia sostenible fundada el 2019.
+ *             extendedDescription: Descripcion ampliada para analisis de inversores.
  *     responses:
  *       201:
  *         description: Oferta creada correctament
@@ -178,6 +186,7 @@ router.post('/', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), validate({
  *             sector: Tecnologia
  *             employeeRange: 26_50
  *             companyDescription: Actualizacion de la descripcion de la empresa.
+ *             extendedDescription: Actualizacion de descripcion extendida.
  *     responses:
  *       200:
  *         description: Oferta actualitzada correctament

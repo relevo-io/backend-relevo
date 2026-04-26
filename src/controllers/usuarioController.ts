@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { IUsuario } from '../models/usuarioModel.js';
 import * as usuarioService from '../services/usuarioService.js';
 import {
@@ -24,7 +24,7 @@ export const getUsuario = asyncWrapper(async (req: Request<{ id: string }>, res:
 });
 
 export const createUsuario = asyncWrapper(async (req: Request<{}, {}, Partial<IUsuario>>, res: Response) => {
-  const nuevoUsuario = await usuarioService.crearUsuario(req.body);
+  const nuevoUsuario = await usuarioService.crearUsuario({ ...req.body, roles: ['OWNER', 'INTERESTED'] });
   res.status(201).json(nuevoUsuario);
 });
 
@@ -56,7 +56,7 @@ export const deleteManyUsuarios = asyncWrapper(async (
   const { ids } = req.body;
   const deletedCount = await usuarioService.eliminarUsuariosPorIds(ids);
   res.status(200).json({
-    message: 'Borrado múltiple ejecutado',
+    message: 'Borrado mÃºltiple ejecutado',
     requestedCount: ids.length,
     deletedCount
   });
@@ -89,3 +89,4 @@ export const patchManyUsuariosVisibility = asyncWrapper(async (
     visible
   });
 });
+

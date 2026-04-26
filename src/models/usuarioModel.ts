@@ -59,6 +59,10 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *         professionalBackground:
  *           type: string
  *           maxLength: 2000
+ *         cv:
+ *           type: string
+ *           maxLength: 4000
+ *           example: 'Experiencia en gestion operativa, liderazgo y expansion comercial.'
  *         preferredRegions:
  *           type: array
  *           items:
@@ -85,6 +89,7 @@ export interface IUsuario {
   location?: string;
   bio?: string;
   professionalBackground?: string;
+  cv?: string;
   preferredRegions?: string[];
   visible?: boolean;
   createdAt?: Date;
@@ -142,6 +147,12 @@ const usuarioSchema = new Schema<IUsuario>(
       type: String,
       required: false,
       maxlength: 2000
+    },
+    cv: {
+      type: String,
+      required: false,
+      maxlength: 4000,
+      trim: true
     },
     preferredRegions: [
       {

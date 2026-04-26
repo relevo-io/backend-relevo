@@ -16,6 +16,10 @@ export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
   return await OfertaModel.findByIdAndDelete(id).lean();
 };
 
-export const listarOfertas = async (): Promise<IOferta[]> => {
-  return await OfertaModel.find().lean();
+export const listarOfertas = async (options?: { excludeOwnerId?: string }): Promise<IOferta[]> => {
+  const filter = options?.excludeOwnerId
+    ? { owner: { $ne: options.excludeOwnerId } }
+    : {};
+
+  return await OfertaModel.find(filter).lean();
 };

@@ -60,6 +60,10 @@ export const employeeRanges = [
  *           type: string
  *           maxLength: 3000
  *           example: 'Empresa de tecnologia sostenible fundada el 2019.'
+ *         extendedDescription:
+ *           type: string
+ *           maxLength: 10000
+ *           example: 'Descripcion extendida con informacion mas detallada sobre operacion, clientes y proyecciones.'
  *         publishedAt:
  *           type: string
  *           readOnly: true
@@ -82,6 +86,7 @@ export interface IOferta {
   creationYear?: number;
   employeeRange?: (typeof employeeRanges)[number];
   companyDescription: string;
+  extendedDescription?: string;
   publishedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -123,6 +128,12 @@ const ofertaSchema = new Schema<IOferta>(
       type: String,
       required: true,
       maxlength: 3000
+    },
+    extendedDescription: {
+      type: String,
+      required: false,
+      maxlength: 10000,
+      trim: true
     },
     publishedAt: {
       type: Date,

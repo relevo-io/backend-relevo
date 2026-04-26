@@ -4,9 +4,12 @@ import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotFoundError, UnauthorizedError } from '../utils/AppError.js';
+import { logger } from '../config.js';
 
-export const getOfertas = asyncWrapper(async (_req: Request, res: Response) => {
-  const ofertas = await ofertaService.listarOfertas();
+export const getOfertas = asyncWrapper(async (req: Request<{}, {}, {}, { excludeOwnerId?: string }>, res: Response) => {
+  const ofertas = await ofertaService.listarOfertas({
+    excludeOwnerId: req.query.excludeOwnerId
+  });
   res.status(200).json(ofertas);
 });
 
@@ -20,6 +23,8 @@ export const getOferta = asyncWrapper(async (req: Request<{ id: string }>, res: 
 });
 
 export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  logger.info({ path: req.originalUrl, userId: req.user?.id, roles: req.user?.roles, body: req.body }, 'CONTROLLER createOferta: entrada');
+
   if (!req.user) {
     throw new UnauthorizedError('No autenticado');
   }
@@ -31,6 +36,8 @@ export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response)
     ...req.body,
     owner: ownerToSave as any
   });
+
+  logger.info({ ofertaId: nuevaOferta._id, owner: nuevaOferta.owner }, 'CONTROLLER createOferta: guardada');
   res.status(201).json(nuevaOferta);
 });
 

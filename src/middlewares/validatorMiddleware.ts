@@ -16,6 +16,11 @@ type ValidationSchemas = {
 export const validate = (schemas: ValidationSchemas) =>
   (req: Request, res: Response, next: NextFunction): void => {
     try {
+      logger.info(
+        { method: req.method, path: req.originalUrl, body: req.body, params: req.params, query: req.query },
+        'VALIDATOR: entrada'
+      );
+
       if (schemas.body) {
         schemas.body.parse(req.body);
       }
@@ -28,10 +33,23 @@ export const validate = (schemas: ValidationSchemas) =>
         schemas.query.parse(req.query);
       }
 
+      logger.info({ method: req.method, path: req.originalUrl }, 'VALIDATOR: OK');
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.warn('Validation error on %s %s', req.method, req.url);
+        logger.warn(
+          {
+            method: req.method,
+            path: req.originalUrl,
+            body: req.body,
+            issues: error.issues.map((issue) => ({
+              path: issue.path.join('.'),
+              message: issue.message,
+              code: issue.code
+            }))
+          },
+          'VALIDATOR: ZodError'
+        );
         
         const details = error.issues.map(err => ({
           field: err.path.join('.'),

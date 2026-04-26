@@ -45,7 +45,16 @@ export const globalErrorHandler = (
     if (errorToHandle.statusCode >= 500) {
        logger.error(errorToHandle, 'AppError (Operational 500)');
     } else {
-       logger.warn(`[${errorToHandle.errorCode}] ${errorToHandle.message}`);
+       logger.warn(
+        {
+          errorCode: errorToHandle.errorCode,
+          message: errorToHandle.message,
+          details: errorToHandle.details,
+          method: req.method,
+          path: req.originalUrl
+        },
+        'AppError (Operational 4xx)'
+      );
     }
   } else {
     // Error NO controlado. Bug de programación interno o librerías que petan
