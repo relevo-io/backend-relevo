@@ -23,9 +23,9 @@ app.set('port', apiPort);
  * MIDDLEWARES
  */
 
-// Enable CORS con credenciales para permitir cookies HttpOnly (Refresh Token)
+// Enable CORS compatible con múltiples orígenes (Angular y Flutter Web)
 app.use(cors({
-    origin: 'http://localhost:4200',
+    origin: (origin, callback) => callback(null, true),
     credentials: true
 }));
 
