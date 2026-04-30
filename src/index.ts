@@ -6,7 +6,9 @@ async function main() {
   try {
     // CRITICAL: await the database setup before starting the server
     await setupDatabase(); 
-    await seedingDatabase();
+    if (process.env.SEED_DATABASE === 'true') {
+      await seedingDatabase();
+    }
     
     const port = app.get('port');
     app.listen(port, () => {
