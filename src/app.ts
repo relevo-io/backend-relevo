@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { apiPort } from './config.js';
+import { apiPort, config } from './config.js';
 import usuarioRoutes from './routes/usuarioRoutes.js';
 import ofertaRoutes from './routes/ofertaRoutes.js';
 import solicitudRoutes from './routes/solicitudRoutes.js';
@@ -25,7 +25,7 @@ app.set('port', apiPort);
 
 // Enable CORS compatible con múltiples orígenes (Angular y Flutter Web)
 app.use(cors({
-    origin: (origin, callback) => callback(null, true),
+    origin: config.frontendUrl,
     credentials: true
 }));
 
