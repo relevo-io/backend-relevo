@@ -68,6 +68,10 @@ const router = Router();
  *         visible:
  *           type: boolean
  *           default: true
+ *         language:
+ *           type: string
+ *           enum: [es, ca, en]
+ *           default: es
  *
  *     UpdateUsuario:
  *       type: object
@@ -102,6 +106,9 @@ const router = Router();
  *             type: string
  *         visible:
  *           type: boolean
+ *         language:
+ *           type: string
+ *           enum: [es, ca, en]
  */
 
 /**
@@ -378,6 +385,17 @@ router.patch(
  *         $ref: '#/components/responses/NotFound'
  */
 router.put(
+	'/:id',
+	authenticateToken,
+	authorizeSelfOrAdmin('id'),
+	validateUsuarioUpdateBody,
+	validate({
+		params: usuarioIdParamsSchema
+	}),
+	usuarioController.updateUsuario
+);
+
+router.patch(
 	'/:id',
 	authenticateToken,
 	authorizeSelfOrAdmin('id'),

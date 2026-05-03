@@ -29,7 +29,8 @@ export const login = asyncWrapper(async (req: Request, res: Response, next: Next
             _id: usuario._id,
             fullName: usuario.fullName,
             email: usuario.email,
-            roles: usuario.roles
+            roles: usuario.roles,
+            language: usuario.language
         }
     });
 });

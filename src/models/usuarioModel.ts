@@ -71,6 +71,11 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           type: boolean
  *           default: true
  *           example: true
+ *         language:
+ *           type: string
+ *           enum: [es, ca, en]
+ *           default: es
+ *           example: 'ca'
  *         createdAt:
  *           type: string
  *           readOnly: true
@@ -92,6 +97,7 @@ export interface IUsuario {
   cv?: string;
   preferredRegions?: string[];
   visible?: boolean;
+  language?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -164,6 +170,11 @@ const usuarioSchema = new Schema<IUsuario>(
       type: Boolean,
       required: true,
       default: true
+    },
+    language: {
+      type: String,
+      enum: ['es', 'ca', 'en'],
+      default: 'es'
     }
   },
   {

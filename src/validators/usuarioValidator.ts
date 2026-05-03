@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { userRoles } from '../models/usuarioModel.js';
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
@@ -36,6 +36,7 @@ const usuarioBaseSchema = z.object({
   cv: z.string().trim().max(4000).optional(),
   preferredRegions: preferredRegionsSchema,
   visible: z.boolean().optional(),
+  language: z.enum(['es', 'ca', 'en']).optional(),
 });
 
 export const createUsuarioSchema = usuarioBaseSchema.strict();
