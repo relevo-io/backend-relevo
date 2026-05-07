@@ -1,6 +1,8 @@
+import { createServer } from 'http';
 import app from './app.js'
 import { setupDatabase, seedingDatabase } from './database.js';
 import { logger } from './config.js';
+import { initSocketServer } from './sockets/socketServer.js';
 
 async function main() {
   try {
@@ -9,8 +11,14 @@ async function main() {
     await seedingDatabase();
     
     const port = app.get('port');
-    app.listen(port, () => {
+
+    // Create http.Server so Socket.io can attach to the same instance
+    const httpServer = createServer(app);
+    initSocketServer(httpServer);
+
+    httpServer.listen(port, () => {
       logger.info('🚀 Server running on port %d', port);
+      logger.info('⚡ Socket.io ready');
     });
     
   } catch (error) {
