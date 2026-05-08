@@ -6,6 +6,9 @@ import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
     try {
+        if (!config.mongoUri) {
+            throw new Error('Missing required env var: MONGO_URI');
+        }
         mongoose.set('strictQuery', true);
         await mongoose.connect(config.mongoUri);
         logger.info('Connected to MongoDB');
