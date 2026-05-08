@@ -6,6 +6,7 @@ import usuarioRoutes from './routes/usuarioRoutes.js';
 import ofertaRoutes from './routes/ofertaRoutes.js';
 import solicitudRoutes from './routes/solicitudRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
@@ -64,6 +65,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/ofertas', ofertaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/chats', chatRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)

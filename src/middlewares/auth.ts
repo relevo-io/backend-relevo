@@ -4,6 +4,7 @@ import { verifyAccessToken } from "../utils/jwt.js";
 import { IJwtPayload } from "../models/JwtPayload.js";
 import { OfertaModel } from "../models/ofertaModel.js";
 import { SolicitudModel } from "../models/solicitudModel.js";
+import { ChatModel } from "../models/chatModel.js";
 import { UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from "../utils/AppError.js";
 
 export interface AuthRequest extends Request {
@@ -143,6 +144,34 @@ export const authorizeSolicitudParticipantOrAdmin = async (req: AuthRequest, res
 
     if (!isOwner && !isInterested) {
       return next(new ForbiddenError('No autorizado'));
+    }
+
+    next();
+  } catch (error) {
+    return next(new InternalServerError('Internal Server Error'));
+  }
+};
+
+export const authorizeChatParticipant = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return next(new UnauthorizedError('No autenticado'));
+    }
+
+    if (req.user.roles.includes('ADMIN')) {
+      return next();
+    }
+
+    const chat = await ChatModel.findById(req.params['chatId']).select('owner interested').lean();
+    if (!chat) {
+      return next(new NotFoundError('Chat no encontrado'));
+    }
+
+    const isOwner = String(chat.owner) === req.user.id;
+    const isInterested = String(chat.interested) === req.user.id;
+
+    if (!isOwner && !isInterested) {
+      return next(new ForbiddenError('No autorizado para acceder a este chat'));
     }
 
     next();
