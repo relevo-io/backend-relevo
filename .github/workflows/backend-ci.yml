@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: ['dev', 'feature/devops2']
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ---------------------------------------------------------
   # JOB 1: CALIDAD DE CÓDIGO (Lint, Format, Types)
