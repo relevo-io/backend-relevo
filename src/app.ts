@@ -17,25 +17,37 @@ const app = express();
 /**
  * APPLICATION SETTINGS
  */
-// Set the server port 
+// Set the server port
 app.set('port', apiPort);
 
 /**
  * MIDDLEWARES
  */
 
+// Lista de orígenes permitidos
+const allowedOrigins = [
+  config.frontendUrl,
+  'http://localhost:4200', // Angular default
+  'http://localhost:5173', // Vite default
+  'http://localhost:8080' // Other common default
+];
+
 // Enable CORS compatible con múltiples orígenes (Angular y Flutter Web)
-app.use(cors({
+app.use(
+  cors({
     origin: (origin, callback) => {
-        // Allow requests without origin (for tools like Postman) and the configured frontend URL.
-        if (!origin || origin === config.frontendUrl) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+      // Allow requests without origin (for tools like Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     },
     credentials: true
-}));
+  })
+);
 
 // Built-in middleware to parse incoming requests with JSON payloads
 app.use(express.json());
@@ -49,11 +61,11 @@ app.use(httpLogger);
  * Simple, stateless endpoint to verify the server is running.
  */
 app.get('/ping', (_req: Request, res: Response) => {
-    res.status(200).json({
-        status: 'ok',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 /**
@@ -76,11 +88,10 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 // Catch-all route for non-existent resources (404 Not Found)
 app.use((req, res) => {
-    res.status(404).json({ message: 'Resource not found' });
+  res.status(404).json({ message: 'Resource not found' });
 });
 
 // Centralized error handler
 app.use(globalErrorHandler);
 
 export default app; // Default export for the server entry point
-

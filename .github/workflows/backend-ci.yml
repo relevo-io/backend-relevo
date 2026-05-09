@@ -1,0 +1,69 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: ['dev', 'feature/devops2']
+  pull_request:
+    branches: ['dev', 'feature/devops2']
+
+jobs:
+  # ---------------------------------------------------------
+  # JOB 1: CALIDAD DE CÓDIGO (Lint, Format, Types)
+  # ---------------------------------------------------------
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Code (Format, Lint, Types)
+        run: npm run validate
+
+      - name: Verify Build
+        run: npm run build
+
+  # ---------------------------------------------------------
+  # JOB 2: TESTS DE INTEGRACIÓN (Necesita que la calidad pase)
+  # ---------------------------------------------------------
+  unit-and-integration-tests:
+    needs: quality-check
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8.0.19
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Tests
+        env:
+          MONGO_URI: mongodb://localhost:27017/test_db
+          BCRYPT_SALT_ROUNDS: 1
+          JWT_ACCESS_SECRET: test_access_secret_key_for_ci_validation
+          JWT_REFRESH_SECRET: test_refresh_secret_key_for_ci_validation
+          LOG_LEVEL: error
+        run: npm test

@@ -27,9 +27,9 @@ export const eliminarSolicitud = async (id: string): Promise<ISolicitud | null> 
 
 export const listarSolicitudes = async (): Promise<ISolicitud[]> => {
   return await SolicitudModel.find()
-    .populate('interestedUser', 'nombre email') 
+    .populate('interestedUser', 'nombre email')
     .populate('opportunity', 'companyDescription')
-    .lean()                                   
+    .lean()
     .exec();
 };
 

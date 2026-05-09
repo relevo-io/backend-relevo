@@ -9,7 +9,7 @@ const rolesSchema = z
   .min(1, 'Debes enviar al menos un rol')
   .max(2, 'Maximo dos roles por usuario')
   .refine((roles) => new Set(roles).size === roles.length, {
-    message: 'No se permiten roles duplicados',
+    message: 'No se permiten roles duplicados'
   });
 
 const preferredRegionsSchema = z.preprocess((value) => {
@@ -36,7 +36,7 @@ const usuarioBaseSchema = z.object({
   cv: z.string().trim().max(4000).optional(),
   preferredRegions: preferredRegionsSchema,
   visible: z.boolean().optional(),
-  language: z.enum(['es', 'ca', 'en']).optional(),
+  language: z.enum(['es', 'ca', 'en']).optional()
 });
 
 export const createUsuarioSchema = usuarioBaseSchema.strict();
@@ -46,42 +46,40 @@ const publicRolesSchema = z
   .min(1, 'Debes enviar al menos un rol')
   .max(2, 'Maximo dos roles por usuario')
   .refine((roles) => new Set(roles).size === roles.length, {
-    message: 'No se permiten roles duplicados',
+    message: 'No se permiten roles duplicados'
   });
 
-export const createUsuarioPublicSchema = usuarioBaseSchema
-  .extend({ roles: publicRolesSchema })
-  .strict();
+export const createUsuarioPublicSchema = usuarioBaseSchema.extend({ roles: publicRolesSchema }).strict();
 
 export const updateUsuarioSchema = usuarioBaseSchema
   .partial()
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'Debes enviar al menos un campo para actualizar',
+    message: 'Debes enviar al menos un campo para actualizar'
   });
 
 export const updateUsuarioSelfSchema = usuarioBaseSchema
   .omit({ roles: true })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'Debes enviar al menos un campo para actualizar',
+    message: 'Debes enviar al menos un campo para actualizar'
   });
 
 export const deleteManyUsuariosSchema = z.object({
-  ids: z.array(objectIdSchema).min(1, 'Debes enviar al menos un id'),
+  ids: z.array(objectIdSchema).min(1, 'Debes enviar al menos un id')
 });
 
 export const usuarioIdParamsSchema = z.object({
-  id: objectIdSchema,
+  id: objectIdSchema
 });
 
 export const updateUsuarioVisibilitySchema = z.object({
-  visible: z.boolean(),
+  visible: z.boolean()
 });
 
 export const updateManyUsuariosVisibilitySchema = z.object({
   ids: z.array(objectIdSchema).min(1, 'Debes enviar al menos un id'),
-  visible: z.boolean(),
+  visible: z.boolean()
 });
 
 export type CreateUsuarioBody = z.infer<typeof createUsuarioSchema>;

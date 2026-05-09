@@ -2,16 +2,16 @@ import { Router } from 'express';
 import * as solicitudController from '../controllers/solicitudController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
-	createSolicitudSchema,
-	solicitudIdParamsSchema,
-	updateSolicitudSchema,
-	updateSolicitudStatusSchema
+  createSolicitudSchema,
+  solicitudIdParamsSchema,
+  updateSolicitudSchema,
+  updateSolicitudStatusSchema
 } from '../validators/solicitudValidator.js';
 import {
-	authenticateToken,
-	authorizeRoles,
-	authorizeSolicitudOwnerOrAdmin,
-	authorizeSolicitudParticipantOrAdmin
+  authenticateToken,
+  authorizeRoles,
+  authorizeSolicitudOwnerOrAdmin,
+  authorizeSolicitudParticipantOrAdmin
 } from '../middlewares/auth.js';
 
 const router = Router();
@@ -147,7 +147,13 @@ router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), solicitudCon
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/:id', authenticateToken, authorizeSolicitudOwnerOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.getSolicitud);
+router.get(
+  '/:id',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.getSolicitud
+);
 
 /**
  * @openapi
@@ -178,7 +184,13 @@ router.get('/:id', authenticateToken, authorizeSolicitudOwnerOrAdmin, validate({
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), validate({ body: createSolicitudSchema }), solicitudController.createSolicitud);
+router.post(
+  '/',
+  authenticateToken,
+  authorizeRoles('INTERESTED', 'ADMIN'),
+  validate({ body: createSolicitudSchema }),
+  solicitudController.createSolicitud
+);
 
 /**
  * @openapi
@@ -219,14 +231,14 @@ router.post('/', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), valid
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/:id/message',
-	authenticateToken,
-	authorizeSolicitudOwnerOrAdmin,
-	validate({
-		params: solicitudIdParamsSchema,
-		body: updateSolicitudSchema
-	}),
-	solicitudController.updateSolicitud
+  '/:id/message',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: updateSolicitudSchema
+  }),
+  solicitudController.updateSolicitud
 );
 
 /**
@@ -252,7 +264,13 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete('/:id', authenticateToken, authorizeSolicitudParticipantOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.deleteSolicitud);
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeSolicitudParticipantOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.deleteSolicitud
+);
 
 /**
  * @openapi
@@ -298,15 +316,14 @@ router.delete('/:id', authenticateToken, authorizeSolicitudParticipantOrAdmin, v
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/:id/status',
-	authenticateToken,
-	authorizeSolicitudOwnerOrAdmin,
-	validate({
-		params: solicitudIdParamsSchema,
-		body: updateSolicitudStatusSchema
-	}),
-	solicitudController.patchEstadoSolicitud
+  '/:id/status',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: updateSolicitudStatusSchema
+  }),
+  solicitudController.patchEstadoSolicitud
 );
 
 export default router;
-

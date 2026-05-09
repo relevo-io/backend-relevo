@@ -1,9 +1,11 @@
 import { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+import { config } from '../config.js';
+
 export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = config.bcryptSaltRounds;
 
 const hashPassword = async (plainPassword: string): Promise<string> => {
   return bcrypt.hash(plainPassword, SALT_ROUNDS);

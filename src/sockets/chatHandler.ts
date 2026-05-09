@@ -26,7 +26,7 @@ const roomName = (chatId: string) => `chat:${chatId}`;
 
 function sanitizeContent(raw: string): string {
   return sanitizeHtml(raw, {
-    allowedTags: [],       // No HTML allowed — plain text only
+    allowedTags: [], // No HTML allowed — plain text only
     allowedAttributes: {}
   }).trim();
 }
@@ -56,8 +56,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
         return callback?.({ ok: false, error: 'Chat no encontrado' });
       }
 
-      const isParticipant =
-        String(chat.owner) === userId || String(chat.interested) === userId;
+      const isParticipant = String(chat.owner) === userId || String(chat.interested) === userId;
 
       if (!isParticipant) {
         logger.warn('[Socket] join_chat rejected — user %s is not participant of chat %s', userId, chatId);
@@ -95,85 +94,74 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
   // ── send_message ─────────────────────────────
   // Client emits: { chatId, content } + ack callback
   // Server: sanitize → persist → update Chat → broadcast → ack
-  socket.on(
-    'send_message',
-    async (
-      payload: { chatId: string; content: string },
-      callback?: (res: unknown) => void
-    ) => {
-      try {
-        const { chatId, content: rawContent } = payload ?? {};
+  socket.on('send_message', async (payload: { chatId: string; content: string }, callback?: (res: unknown) => void) => {
+    try {
+      const { chatId, content: rawContent } = payload ?? {};
 
-        if (!chatId || !rawContent) {
-          return callback?.({ ok: false, error: 'chatId y content son requeridos' });
-        }
-
-        // Verify participant
-        const chat = await ChatModel.findById(chatId).select('owner interested isReadOnly').lean();
-        if (!chat) {
-          return callback?.({ ok: false, error: 'Chat no encontrado' });
-        }
-
-        if (chat.isReadOnly) {
-          return callback?.({ ok: false, error: 'Este chat es de solo lectura' });
-        }
-
-        const isParticipant =
-          String(chat.owner) === userId || String(chat.interested) === userId;
-        if (!isParticipant) {
-          return callback?.({ ok: false, error: 'Forbidden' });
-        }
-
-        // Sanitize & validate length
-        const content = sanitizeContent(rawContent);
-        if (!content) {
-          return callback?.({ ok: false, error: 'El mensaje no puede estar vacío' });
-        }
-        if (content.length > MAX_MESSAGE_LENGTH) {
-          return callback?.({ ok: false, error: `Máximo ${MAX_MESSAGE_LENGTH} caracteres` });
-        }
-
-        // Persist message
-        const mensaje = await MensajeModel.create({
-          chat: chatId,
-          sender: userId,
-          content
-        });
-
-        // Determine which unread counter to increment
-        const isOwner = String(chat.owner) === userId;
-        const unreadUpdate = isOwner
-          ? { $inc: { unreadInterested: 1 } }
-          : { $inc: { unreadOwner: 1 } };
-
-        // Update Chat: lastMessage cache + unread counter + updatedAt
-        await ChatModel.findByIdAndUpdate(chatId, {
-          ...unreadUpdate,
-          lastMessage: {
-            content,
-            senderId: userId,
-            sentAt: mensaje.createdAt
-          }
-        });
-
-        // Build response payload (populate sender info)
-        const mensajePopulated = await MensajeModel.findById(mensaje._id)
-          .populate('sender', 'fullName')
-          .lean();
-
-        // Broadcast to everyone in the room EXCEPT the sender
-        socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
-
-        // Acknowledgement — frontend knows message hit the DB
-        callback?.({ ok: true, message: mensajePopulated });
-
-        logger.info('[Socket] Message saved in chat %s by user %s', chatId, userId);
-      } catch (err) {
-        logger.error({ err }, '[Socket] send_message error');
-        callback?.({ ok: false, error: 'Error al guardar el mensaje' });
+      if (!chatId || !rawContent) {
+        return callback?.({ ok: false, error: 'chatId y content son requeridos' });
       }
+
+      // Verify participant
+      const chat = await ChatModel.findById(chatId).select('owner interested isReadOnly').lean();
+      if (!chat) {
+        return callback?.({ ok: false, error: 'Chat no encontrado' });
+      }
+
+      if (chat.isReadOnly) {
+        return callback?.({ ok: false, error: 'Este chat es de solo lectura' });
+      }
+
+      const isParticipant = String(chat.owner) === userId || String(chat.interested) === userId;
+      if (!isParticipant) {
+        return callback?.({ ok: false, error: 'Forbidden' });
+      }
+
+      // Sanitize & validate length
+      const content = sanitizeContent(rawContent);
+      if (!content) {
+        return callback?.({ ok: false, error: 'El mensaje no puede estar vacío' });
+      }
+      if (content.length > MAX_MESSAGE_LENGTH) {
+        return callback?.({ ok: false, error: `Máximo ${MAX_MESSAGE_LENGTH} caracteres` });
+      }
+
+      // Persist message
+      const mensaje = await MensajeModel.create({
+        chat: chatId,
+        sender: userId,
+        content
+      });
+
+      // Determine which unread counter to increment
+      const isOwner = String(chat.owner) === userId;
+      const unreadUpdate = isOwner ? { $inc: { unreadInterested: 1 } } : { $inc: { unreadOwner: 1 } };
+
+      // Update Chat: lastMessage cache + unread counter + updatedAt
+      await ChatModel.findByIdAndUpdate(chatId, {
+        ...unreadUpdate,
+        lastMessage: {
+          content,
+          senderId: userId,
+          sentAt: mensaje.createdAt
+        }
+      });
+
+      // Build response payload (populate sender info)
+      const mensajePopulated = await MensajeModel.findById(mensaje._id).populate('sender', 'fullName').lean();
+
+      // Broadcast to everyone in the room EXCEPT the sender
+      socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
+
+      // Acknowledgement — frontend knows message hit the DB
+      callback?.({ ok: true, message: mensajePopulated });
+
+      logger.info('[Socket] Message saved in chat %s by user %s', chatId, userId);
+    } catch (err) {
+      logger.error({ err }, '[Socket] send_message error');
+      callback?.({ ok: false, error: 'Error al guardar el mensaje' });
     }
-  );
+  });
 
   // ── typing_start ─────────────────────────────
   socket.on('typing_start', (payload: { chatId: string }) => {
@@ -214,7 +202,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
 
     const room = roomName(chatId);
     socket.leave(room);
-    
+
     if (socket.data.activeChatId === chatId) {
       socket.data.activeChatId = undefined;
     }

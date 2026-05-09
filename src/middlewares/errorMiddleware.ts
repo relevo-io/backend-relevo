@@ -7,27 +7,30 @@ export interface ApiErrorResponse {
   statusCode: number;
   errorCode: string;
   message: string;
-  details?: { field?: string; message: string; }[];
+  details?: { field?: string; message: string }[];
   timestamp: string;
 }
 
 export const globalErrorHandler = (
-  err: any,
+  err: Error & {
+    statusCode?: number;
+    errorCode?: string;
+    details?: unknown;
+    code?: number;
+    keyValue?: Record<string, unknown>;
+  },
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   let errorToHandle = err;
 
   // Interceptar errores específicos de Mongoose / MongoDB
-  if (err.name === 'MongoServerError' && err.code === 11000) {
+  if (err.name === 'MongoServerError' && err.code === 11000 && err.keyValue) {
     const field = Object.keys(err.keyValue)[0];
-    errorToHandle = new AppError(
-      409,
-      'CONFLICT',
-      `Ya existe un registro con ese ${field}. Por favor, utiliza otro.`,
-      [{ field, message: 'Dato duplicado' }]
-    );
+    errorToHandle = new AppError(409, 'CONFLICT', `Ya existe un registro con ese ${field}. Por favor, utiliza otro.`, [
+      { field, message: 'Dato duplicado' }
+    ]);
   }
 
   // Configuro respuesta estándar estrictamente tipada
@@ -36,16 +39,17 @@ export const globalErrorHandler = (
     statusCode: errorToHandle.statusCode || 500,
     errorCode: errorToHandle.errorCode || 'INTERNAL_ERROR',
     message: errorToHandle.message || 'Error interno del servidor',
-    details: errorToHandle.details,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    details: errorToHandle.details as any,
     timestamp: new Date().toISOString()
   };
 
   // Manejo de errores controlados (Operacionales)
   if (errorToHandle instanceof AppError && errorToHandle.isOperational) {
     if (errorToHandle.statusCode >= 500) {
-       logger.error(errorToHandle, 'AppError (Operational 500)');
+      logger.error(errorToHandle, 'AppError (Operational 500)');
     } else {
-       logger.warn(
+      logger.warn(
         {
           errorCode: errorToHandle.errorCode,
           message: errorToHandle.message,

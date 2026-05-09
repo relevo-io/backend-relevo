@@ -7,13 +7,13 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'Backend Relevo API',
       version: '1.0.0',
-      description: 'Documentación oficial de los endpoints de la plataforma Relevo.',
+      description: 'Documentación oficial de los endpoints de la plataforma Relevo.'
     },
     servers: [
       {
         url: `http://localhost:${apiPort}`,
-        description: 'Servidor local',
-      },
+        description: 'Servidor local'
+      }
     ],
     components: {
       securitySchemes: {
@@ -62,12 +62,12 @@ const options: swaggerJsdoc.Options = {
               }
             }
           }
-        },
+        }
       }
     }
   },
   // Documentación de rutas y modelos
-  apis: ['./src/routes/*.ts', './src/models/*.ts'],
+  apis: ['./src/routes/*.ts', './src/models/*.ts']
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

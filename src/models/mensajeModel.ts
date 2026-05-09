@@ -8,7 +8,7 @@ export interface IMensaje {
   _id?: Types.ObjectId;
   chat: Types.ObjectId;
   sender: Types.ObjectId;
-  content: string;         // Contenido ya sanitizado (XSS-safe)
+  content: string; // Contenido ya sanitizado (XSS-safe)
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -28,17 +28,16 @@ export const createUsuario = asyncWrapper(async (req: Request<{}, {}, Partial<IU
   res.status(201).json(nuevoUsuario);
 });
 
-export const updateUsuario = asyncWrapper(async (
-  req: Request<{ id: string }, {}, Partial<IUsuario>>,
-  res: Response
-) => {
-  const usuarioActualizado = await usuarioService.actualizarUsuario(req.params.id, req.body);
-  if (!usuarioActualizado) {
-    throw new NotFoundError('Usuario no encontrado');
-  }
+export const updateUsuario = asyncWrapper(
+  async (req: Request<{ id: string }, {}, Partial<IUsuario>>, res: Response) => {
+    const usuarioActualizado = await usuarioService.actualizarUsuario(req.params.id, req.body);
+    if (!usuarioActualizado) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
 
-  res.status(200).json(usuarioActualizado);
-});
+    res.status(200).json(usuarioActualizado);
+  }
+);
 
 export const deleteUsuario = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
   const eliminado = await usuarioService.eliminarUsuario(req.params.id);
@@ -49,10 +48,7 @@ export const deleteUsuario = asyncWrapper(async (req: Request<{ id: string }>, r
   res.status(204).send();
 });
 
-export const deleteManyUsuarios = asyncWrapper(async (
-  req: Request<{}, {}, DeleteManyUsuariosBody>,
-  res: Response
-) => {
+export const deleteManyUsuarios = asyncWrapper(async (req: Request<{}, {}, DeleteManyUsuariosBody>, res: Response) => {
   const { ids } = req.body;
   const deletedCount = await usuarioService.eliminarUsuariosPorIds(ids);
   res.status(200).json({
@@ -62,31 +58,28 @@ export const deleteManyUsuarios = asyncWrapper(async (
   });
 });
 
-export const patchUsuarioVisibility = asyncWrapper(async (
-  req: Request<{ id: string }, {}, UpdateUsuarioVisibilityBody>,
-  res: Response
-) => {
-  const usuario = await usuarioService.actualizarVisibilidadUsuario(req.params.id, req.body.visible);
-  if (!usuario) {
-    throw new NotFoundError('Usuario no encontrado');
+export const patchUsuarioVisibility = asyncWrapper(
+  async (req: Request<{ id: string }, {}, UpdateUsuarioVisibilityBody>, res: Response) => {
+    const usuario = await usuarioService.actualizarVisibilidadUsuario(req.params.id, req.body.visible);
+    if (!usuario) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
+
+    res.status(200).json(usuario);
   }
+);
 
-  res.status(200).json(usuario);
-});
+export const patchManyUsuariosVisibility = asyncWrapper(
+  async (req: Request<{}, {}, UpdateManyUsuariosVisibilityBody>, res: Response) => {
+    const { ids, visible } = req.body;
+    const { matchedCount, modifiedCount } = await usuarioService.actualizarVisibilidadUsuarios(ids, visible);
 
-export const patchManyUsuariosVisibility = asyncWrapper(async (
-  req: Request<{}, {}, UpdateManyUsuariosVisibilityBody>,
-  res: Response
-) => {
-  const { ids, visible } = req.body;
-  const { matchedCount, modifiedCount } = await usuarioService.actualizarVisibilidadUsuarios(ids, visible);
-
-  res.status(200).json({
-    message: 'Visibilidad de usuarios actualizada',
-    requestedCount: ids.length,
-    matchedCount,
-    modifiedCount,
-    visible
-  });
-});
-
+    res.status(200).json({
+      message: 'Visibilidad de usuarios actualizada',
+      requestedCount: ids.length,
+      matchedCount,
+      modifiedCount,
+      visible
+    });
+  }
+);

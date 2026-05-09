@@ -2,13 +2,11 @@ import { Router } from 'express';
 import * as usuarioController from '../controllers/usuarioController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
-	createUsuarioPublicSchema,
-	deleteManyUsuariosSchema,
-	updateUsuarioSchema,
-	updateUsuarioSelfSchema,
-	updateManyUsuariosVisibilitySchema,
-	usuarioIdParamsSchema,
-	updateUsuarioVisibilitySchema
+  createUsuarioPublicSchema,
+  deleteManyUsuariosSchema,
+  updateManyUsuariosVisibilitySchema,
+  usuarioIdParamsSchema,
+  updateUsuarioVisibilitySchema
 } from '../validators/usuarioValidator.js';
 import { authenticateToken, authorizeRoles, authorizeSelfOrAdmin } from '../middlewares/auth.js';
 import { validateUsuarioUpdateBody } from '../middlewares/usuarioMiddlewares.js';
@@ -158,7 +156,13 @@ router.get('/', authenticateToken, authorizeRoles('ADMIN'), usuarioController.ge
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id', authenticateToken, authorizeSelfOrAdmin('id'), validate({ params: usuarioIdParamsSchema }), usuarioController.getUsuario);
+router.get(
+  '/:id',
+  authenticateToken,
+  authorizeSelfOrAdmin('id'),
+  validate({ params: usuarioIdParamsSchema }),
+  usuarioController.getUsuario
+);
 
 /**
  * @openapi
@@ -224,7 +228,13 @@ router.post('/', validate({ body: createUsuarioPublicSchema }), usuarioControlle
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), validate({ body: deleteManyUsuariosSchema }), usuarioController.deleteManyUsuarios);
+router.delete(
+  '/batch',
+  authenticateToken,
+  authorizeRoles('ADMIN'),
+  validate({ body: deleteManyUsuariosSchema }),
+  usuarioController.deleteManyUsuarios
+);
 
 /**
  * @openapi
@@ -279,11 +289,11 @@ router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), validate({ b
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/batch/visibility',
-	authenticateToken,
-	authorizeRoles('ADMIN'),
-	validate({ body: updateManyUsuariosVisibilitySchema }),
-	usuarioController.patchManyUsuariosVisibility
+  '/batch/visibility',
+  authenticateToken,
+  authorizeRoles('ADMIN'),
+  validate({ body: updateManyUsuariosVisibilitySchema }),
+  usuarioController.patchManyUsuariosVisibility
 );
 
 /**
@@ -328,14 +338,14 @@ router.patch(
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/:id/visibility',
-	authenticateToken,
-	authorizeSelfOrAdmin('id'),
-	validate({
-		params: usuarioIdParamsSchema,
-		body: updateUsuarioVisibilitySchema
-	}),
-	usuarioController.patchUsuarioVisibility
+  '/:id/visibility',
+  authenticateToken,
+  authorizeSelfOrAdmin('id'),
+  validate({
+    params: usuarioIdParamsSchema,
+    body: updateUsuarioVisibilitySchema
+  }),
+  usuarioController.patchUsuarioVisibility
 );
 
 /**
@@ -385,28 +395,33 @@ router.patch(
  *         $ref: '#/components/responses/NotFound'
  */
 router.put(
-	'/:id',
-	authenticateToken,
-	authorizeSelfOrAdmin('id'),
-	validateUsuarioUpdateBody,
-	validate({
-		params: usuarioIdParamsSchema
-	}),
-	usuarioController.updateUsuario
+  '/:id',
+  authenticateToken,
+  authorizeSelfOrAdmin('id'),
+  validateUsuarioUpdateBody,
+  validate({
+    params: usuarioIdParamsSchema
+  }),
+  usuarioController.updateUsuario
 );
 
 router.patch(
-	'/:id',
-	authenticateToken,
-	authorizeSelfOrAdmin('id'),
-	validateUsuarioUpdateBody,
-	validate({
-		params: usuarioIdParamsSchema
-	}),
-	usuarioController.updateUsuario
+  '/:id',
+  authenticateToken,
+  authorizeSelfOrAdmin('id'),
+  validateUsuarioUpdateBody,
+  validate({
+    params: usuarioIdParamsSchema
+  }),
+  usuarioController.updateUsuario
 );
 
-router.delete('/:id', authenticateToken, authorizeSelfOrAdmin('id'), validate({ params: usuarioIdParamsSchema }), usuarioController.deleteUsuario);
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeSelfOrAdmin('id'),
+  validate({ params: usuarioIdParamsSchema }),
+  usuarioController.deleteUsuario
+);
 
 export default router;
-

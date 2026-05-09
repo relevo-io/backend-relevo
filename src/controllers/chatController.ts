@@ -3,12 +3,7 @@ import { AuthRequest } from '../middlewares/auth.js';
 import { ChatModel } from '../models/chatModel.js';
 import { MensajeModel } from '../models/mensajeModel.js';
 import { OfertaModel } from '../models/ofertaModel.js';
-import {
-  NotFoundError,
-  ForbiddenError,
-  ValidationError,
-  InternalServerError
-} from '../utils/AppError.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 
 // ─────────────────────────────────────────────
 //  POST /api/chats
@@ -47,7 +42,9 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
       }
     },
     { upsert: true, new: true }
-  ).populate('owner', 'fullName email').populate('interested', 'fullName email');
+  )
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email');
 
   const statusCode = chat.createdAt?.getTime() === chat.updatedAt?.getTime() ? 201 : 200;
   res.status(statusCode).json(chat);

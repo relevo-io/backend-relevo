@@ -1,6 +1,6 @@
 export interface IJwtPayload {
-    id: string;
-    fullName: string;
-    email: string;
-    roles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>;
+  id: string;
+  fullName: string;
+  email: string;
+  roles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>;
 }
