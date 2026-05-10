@@ -1,0 +1,59 @@
+name: CD - Backend Deploy
+
+on:
+  push:
+    branches:
+      - main # Solo se activa al fusionar en main
+
+jobs:
+  # --- TRABAJO 1: CONSTRUIR Y SUBIR IMAGEN ---
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Login en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir y subir imagen a Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/relevo-backend:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/relevo-backend:${{ github.sha }}
+
+  # --- TRABAJO 2: DESPLEGAR EN EL SERVIDOR ---
+  deploy:
+    needs: build-and-push # Espera a que la imagen esté en la nube
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conectar a TS
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci-cd-ea
+
+      - name: Actualizar contenedor vía SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ea@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ~/relevo
+            
+            # 1. Bajamos la nueva versión de la imagen
+            docker compose pull backend
+            
+            # 2. Reiniciamos solo el backend (mongo y frontend no se tocan)
+            docker compose up -d backend
+            
+            # 3. Limpiamos imágenes viejas para no petar el disco
+            docker image prune -f
+          EOF
