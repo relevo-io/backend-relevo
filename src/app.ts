@@ -27,8 +27,10 @@ app.set('port', apiPort);
 // Enable CORS compatible con múltiples orígenes (Angular y Flutter Web)
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests without origin (for tools like Postman) and the configured frontend URL.
-        if (!origin || origin === config.frontendUrl) {
+        // Allow requests without origin (e.g. Postman), the configured frontend URL,
+        // or any localhost origin (needed for Flutter Web which uses a dynamic port in dev).
+        const isLocalhost = origin && /^http:\/\/localhost(:\d+)?$/.test(origin);
+        if (!origin || origin === config.frontendUrl || isLocalhost) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

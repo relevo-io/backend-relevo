@@ -76,6 +76,11 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           enum: [es, ca, en]
  *           default: es
  *           example: 'ca'
+ *         theme:
+ *           type: string
+ *           enum: [light, dark]
+ *           default: light
+ *           example: 'light'
  *         createdAt:
  *           type: string
  *           readOnly: true
@@ -98,6 +103,7 @@ export interface IUsuario {
   preferredRegions?: string[];
   visible?: boolean;
   language?: string;
+  theme?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -175,6 +181,11 @@ const usuarioSchema = new Schema<IUsuario>(
       type: String,
       enum: ['es', 'ca', 'en'],
       default: 'es'
+    },
+    theme: {
+      type: String,
+      enum: ['light', 'dark'],
+      default: 'light'
     }
   },
   {

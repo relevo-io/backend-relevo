@@ -37,6 +37,7 @@ const usuarioBaseSchema = z.object({
   preferredRegions: preferredRegionsSchema,
   visible: z.boolean().optional(),
   language: z.enum(['es', 'ca', 'en']).optional(),
+  theme: z.enum(['light', 'dark']).optional(),
 });
 
 export const createUsuarioSchema = usuarioBaseSchema.strict();
