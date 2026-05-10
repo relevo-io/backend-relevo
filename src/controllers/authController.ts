@@ -12,7 +12,7 @@ export const login = asyncWrapper(async (req: Request, res: Response, next: Next
     const usuario = await authService.validateUserCredentials(email, password);
 
     if (!usuario) {
-        throw new UnauthorizedError('Credenciales incorrectas');
+        throw new UnauthorizedError('ERRORS.AUTH.INVALID_CREDENTIALS');
     }
 
     const { accessToken, refreshToken } = authService.getTokens(usuario);
@@ -40,7 +40,7 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, nex
     const incomingRefreshToken = req.cookies?.[config.cookies.refreshName] || req.body?.refreshToken;
 
     if (!incomingRefreshToken) {
-        throw new UnauthorizedError('Refresh token requerido');
+        throw new UnauthorizedError('ERRORS.AUTH.REFRESH_TOKEN_REQUIRED');
     }
 
     try {
@@ -56,7 +56,7 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, nex
             accessToken
         });
     } catch (error) {
-        throw new UnauthorizedError('Refresh token expirado o inválido');
+        throw new UnauthorizedError('ERRORS.AUTH.REFRESH_TOKEN_INVALID');
     }
 });
 

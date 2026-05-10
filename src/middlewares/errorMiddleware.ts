@@ -25,7 +25,7 @@ export const globalErrorHandler = (
     errorToHandle = new AppError(
       409,
       'CONFLICT',
-      `Ya existe un registro con ese ${field}. Por favor, utiliza otro.`,
+      'ERRORS.DATABASE.DUPLICATE_FIELD',
       [{ field, message: 'Dato duplicado' }]
     );
   }
@@ -35,7 +35,7 @@ export const globalErrorHandler = (
     success: false,
     statusCode: errorToHandle.statusCode || 500,
     errorCode: errorToHandle.errorCode || 'INTERNAL_ERROR',
-    message: errorToHandle.message || 'Error interno del servidor',
+    message: errorToHandle.message || 'ERRORS.INTERNAL_ERROR',
     details: errorToHandle.details,
     timestamp: new Date().toISOString()
   };
@@ -62,7 +62,7 @@ export const globalErrorHandler = (
     response.statusCode = 500;
     response.errorCode = 'INTERNAL_ERROR';
     // Opcionalmente en producción no desvelaremos detalles
-    response.message = 'Ha ocurrido un error inesperado en el servidor.';
+    response.message = 'ERRORS.INTERNAL_ERROR';
     response.details = undefined;
   }
 
