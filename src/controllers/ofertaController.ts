@@ -23,31 +23,31 @@ export const getOferta = asyncWrapper(async (req: Request<{ id: string }>, res: 
 });
 
 export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response) => {
-  logger.info({ path: req.originalUrl, userId: req.user?.id, roles: req.user?.roles, body: req.body }, 'CONTROLLER createOferta: entrada');
+  logger.info(
+    { path: req.originalUrl, userId: req.user?.id, roles: req.user?.roles, body: req.body },
+    'CONTROLLER createOferta: entrada'
+  );
 
   if (!req.user) {
     throw new UnauthorizedError('No autenticado');
   }
 
   const isAdmin = req.user.roles.includes('ADMIN');
-  const ownerToSave = (isAdmin && req.body.owner) ? req.body.owner : req.user.id;
+  const ownerToSave = isAdmin && req.body.owner ? req.body.owner : req.user.id;
 
   const nuevaOferta = await ofertaService.crearOferta({
     ...req.body,
-    owner: ownerToSave as any
+    owner: ownerToSave as string
   });
 
   logger.info({ ofertaId: nuevaOferta._id, owner: nuevaOferta.owner }, 'CONTROLLER createOferta: guardada');
   res.status(201).json(nuevaOferta);
 });
 
-export const updateOferta = asyncWrapper(async (
-  req: Request<{ id: string }, {}, Partial<IOferta>>,
-  res: Response
-) => {
+export const updateOferta = asyncWrapper(async (req: Request<{ id: string }, {}, Partial<IOferta>>, res: Response) => {
   const authReq = req as unknown as AuthRequest;
   const isAdmin = authReq.user?.roles?.includes('ADMIN');
-  let dataToUpdate = { ...req.body } as any;
+  const dataToUpdate = { ...req.body };
 
   if (!isAdmin) {
     delete dataToUpdate.owner;
@@ -68,4 +68,14 @@ export const deleteOferta = asyncWrapper(async (req: Request<{ id: string }>, re
   }
 
   res.status(204).send();
+});
+
+export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const ofertas = await ofertaService.obtenerOfertasPorOwner(userId);
+  res.status(200).json(ofertas);
 });

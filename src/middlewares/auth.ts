@@ -1,10 +1,11 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { verifyAccessToken } from "../utils/jwt.js";
-import { IJwtPayload } from "../models/JwtPayload.js";
-import { OfertaModel } from "../models/ofertaModel.js";
-import { SolicitudModel } from "../models/solicitudModel.js";
-import { UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from "../utils/AppError.js";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../utils/jwt.js';
+import { IJwtPayload } from '../models/JwtPayload.js';
+import { OfertaModel } from '../models/ofertaModel.js';
+import { SolicitudModel } from '../models/solicitudModel.js';
+import { ChatModel } from '../models/chatModel.js';
+import { UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from '../utils/AppError.js';
 
 export interface AuthRequest extends Request {
   user?: IJwtPayload;
@@ -14,30 +15,25 @@ const hasRole = (req: AuthRequest, role: 'OWNER' | 'INTERESTED' | 'ADMIN'): bool
   return !!req.user?.roles?.includes(role);
 };
 
-export const authenticateToken = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
 
-  const authHeader = req.headers["authorization"];
-
-  const token = authHeader && authHeader.split(" ")[1];
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return next(new UnauthorizedError("Token requerido"));
+    return next(new UnauthorizedError('Token requerido'));
   }
 
   try {
     const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof jwt.TokenExpiredError) {
-      return next(new UnauthorizedError("Access token expirado"));
+      return next(new UnauthorizedError('Access token expirado'));
     }
 
-    return next(new UnauthorizedError("Token inválido"));
+    return next(new UnauthorizedError('Token inválido'));
   }
 };
 
@@ -93,7 +89,7 @@ export const authorizeOfertaOwnerOrAdmin = async (req: AuthRequest, res: Respons
     }
 
     next();
-  } catch (error) {
+  } catch (_error) {
     return next(new InternalServerError('Internal Server Error'));
   }
 };
@@ -118,7 +114,7 @@ export const authorizeSolicitudOwnerOrAdmin = async (req: AuthRequest, res: Resp
     }
 
     next();
-  } catch (error) {
+  } catch (_error) {
     return next(new InternalServerError('Internal Server Error'));
   }
 };
@@ -146,7 +142,35 @@ export const authorizeSolicitudParticipantOrAdmin = async (req: AuthRequest, res
     }
 
     next();
-  } catch (error) {
+  } catch (_error) {
+    return next(new InternalServerError('Internal Server Error'));
+  }
+};
+
+export const authorizeChatParticipant = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return next(new UnauthorizedError('No autenticado'));
+    }
+
+    if (req.user.roles.includes('ADMIN')) {
+      return next();
+    }
+
+    const chat = await ChatModel.findById(req.params['chatId']).select('owner interested').lean();
+    if (!chat) {
+      return next(new NotFoundError('Chat no encontrado'));
+    }
+
+    const isOwner = String(chat.owner) === req.user.id;
+    const isInterested = String(chat.interested) === req.user.id;
+
+    if (!isOwner && !isInterested) {
+      return next(new ForbiddenError('No autorizado para acceder a este chat'));
+    }
+
+    next();
+  } catch (_error) {
     return next(new InternalServerError('Internal Server Error'));
   }
 };

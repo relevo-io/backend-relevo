@@ -6,6 +6,6 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
  */
 export const asyncWrapper = (fn: Function): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(fn(req as any, res, next)).catch(next);
+    Promise.resolve(fn(req as Request, res, next)).catch(next);
   };
 };

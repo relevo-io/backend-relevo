@@ -17,9 +17,11 @@ export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
 };
 
 export const listarOfertas = async (options?: { excludeOwnerId?: string }): Promise<IOferta[]> => {
-  const filter = options?.excludeOwnerId
-    ? { owner: { $ne: options.excludeOwnerId } }
-    : {};
+  const filter = options?.excludeOwnerId ? { owner: { $ne: options.excludeOwnerId } } : {};
 
   return await OfertaModel.find(filter).lean();
+};
+
+export const obtenerOfertasPorOwner = async (ownerId: string): Promise<IOferta[]> => {
+  return await OfertaModel.find({ owner: ownerId }).sort({ createdAt: -1 }).lean();
 };

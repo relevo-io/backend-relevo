@@ -2,16 +2,16 @@ import { Router } from 'express';
 import * as solicitudController from '../controllers/solicitudController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
-	createSolicitudSchema,
-	solicitudIdParamsSchema,
-	updateSolicitudSchema,
-	updateSolicitudStatusSchema
+  createSolicitudSchema,
+  solicitudIdParamsSchema,
+  updateSolicitudSchema,
+  updateSolicitudStatusSchema
 } from '../validators/solicitudValidator.js';
 import {
-	authenticateToken,
-	authorizeRoles,
-	authorizeSolicitudOwnerOrAdmin,
-	authorizeSolicitudParticipantOrAdmin
+  authenticateToken,
+  authorizeRoles,
+  authorizeSolicitudOwnerOrAdmin,
+  authorizeSolicitudParticipantOrAdmin
 } from '../middlewares/auth.js';
 
 const router = Router();
@@ -90,6 +90,80 @@ router.get('/', authenticateToken, authorizeRoles('ADMIN'), solicitudController.
 
 /**
  * @openapi
+ * /api/solicitudes/me/recibidas:
+ *   get:
+ *     summary: Obté la llista de sol·licituds on l'usuari és el propietari de l'oferta
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista de sol·licituds recuperada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Solicitud'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get(
+  '/me/recibidas',
+  authenticateToken,
+  authorizeRoles('OWNER', 'ADMIN'),
+  solicitudController.getMisSolicitudesOwner
+);
+
+/**
+ * @swagger
+ * /api/solicitudes/me/enviadas:
+ *   get:
+ *     summary: Obtener solicitudes enviadas por el usuario actual (como interesado)
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de solicitudes enviadas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Solicitud'
+ */
+router.get(
+  '/me/enviadas',
+  authenticateToken,
+  authorizeRoles('INTERESTED', 'ADMIN'),
+  solicitudController.getMisSolicitudesEnviadas
+);
+
+/**
+ * @swagger
+ * /api/solicitudes/oferta/{ofertaId}/me:
+ *   get:
+ *     summary: Obtener la solicitud del usuario actual para una oferta específica
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: ofertaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Datos de la solicitud o null
+ */
+router.get('/oferta/:ofertaId/me', authenticateToken, solicitudController.getMiSolicitudPorOferta);
+
+/**
+ * @openapi
  * /api/solicitudes/batch:
  *   delete:
  *     summary: Elimina múltiples solicitudes por una lista de IDs
@@ -147,7 +221,13 @@ router.delete('/batch', authenticateToken, authorizeRoles('ADMIN'), solicitudCon
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/:id', authenticateToken, authorizeSolicitudOwnerOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.getSolicitud);
+router.get(
+  '/:id',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.getSolicitud
+);
 
 /**
  * @openapi
@@ -178,7 +258,13 @@ router.get('/:id', authenticateToken, authorizeSolicitudOwnerOrAdmin, validate({
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), validate({ body: createSolicitudSchema }), solicitudController.createSolicitud);
+router.post(
+  '/',
+  authenticateToken,
+  authorizeRoles('INTERESTED', 'ADMIN'),
+  validate({ body: createSolicitudSchema }),
+  solicitudController.createSolicitud
+);
 
 /**
  * @openapi
@@ -219,14 +305,14 @@ router.post('/', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), valid
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/:id/message',
-	authenticateToken,
-	authorizeSolicitudOwnerOrAdmin,
-	validate({
-		params: solicitudIdParamsSchema,
-		body: updateSolicitudSchema
-	}),
-	solicitudController.updateSolicitud
+  '/:id/message',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: updateSolicitudSchema
+  }),
+  solicitudController.updateSolicitud
 );
 
 /**
@@ -252,7 +338,13 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.delete('/:id', authenticateToken, authorizeSolicitudParticipantOrAdmin, validate({ params: solicitudIdParamsSchema }), solicitudController.deleteSolicitud);
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeSolicitudParticipantOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.deleteSolicitud
+);
 
 /**
  * @openapi
@@ -298,15 +390,14 @@ router.delete('/:id', authenticateToken, authorizeSolicitudParticipantOrAdmin, v
  *         $ref: '#/components/responses/ServerError'
  */
 router.patch(
-	'/:id/status',
-	authenticateToken,
-	authorizeSolicitudOwnerOrAdmin,
-	validate({
-		params: solicitudIdParamsSchema,
-		body: updateSolicitudStatusSchema
-	}),
-	solicitudController.patchEstadoSolicitud
+  '/:id/status',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: updateSolicitudStatusSchema
+  }),
+  solicitudController.patchEstadoSolicitud
 );
 
 export default router;
-

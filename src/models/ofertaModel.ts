@@ -8,14 +8,7 @@ export const revenueRanges = [
   'OVER_5M'
 ] as const;
 
-export const employeeRanges = [
-  '1_5',
-  '6_10',
-  '11_25',
-  '26_50',
-  '51_100',
-  '100_PLUS'
-] as const;
+export const employeeRanges = ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS'] as const;
 
 /**
  * @openapi

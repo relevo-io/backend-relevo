@@ -1,14 +1,14 @@
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly errorCode: string;
-  public readonly details?: { field?: string; message: string; }[];
+  public readonly details?: { field?: string; message: string }[];
   public readonly isOperational: boolean;
 
   constructor(
     statusCode: number,
     errorCode: string,
     message: string,
-    details?: { field?: string; message: string; }[],
+    details?: { field?: string; message: string }[],
     isOperational = true
   ) {
     super(message);
@@ -22,7 +22,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string = 'Validation failed', details?: { field?: string; message: string; }[]) {
+  constructor(message: string = 'Validation failed', details?: { field?: string; message: string }[]) {
     super(400, 'VALIDATION_ERROR', message, details);
   }
 }

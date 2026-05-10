@@ -1,9 +1,11 @@
 import { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+import { config } from '../config.js';
+
 export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = config.bcryptSaltRounds;
 
 const hashPassword = async (plainPassword: string): Promise<string> => {
   return bcrypt.hash(plainPassword, SALT_ROUNDS);
@@ -71,6 +73,16 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           type: boolean
  *           default: true
  *           example: true
+ *         language:
+ *           type: string
+ *           enum: [es, ca, en]
+ *           default: es
+ *           example: 'ca'
+ *         theme:
+ *           type: string
+ *           enum: [light, dark]
+ *           default: light
+ *           example: 'light'
  *         createdAt:
  *           type: string
  *           readOnly: true
@@ -92,6 +104,8 @@ export interface IUsuario {
   cv?: string;
   preferredRegions?: string[];
   visible?: boolean;
+  language?: string;
+  theme?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -164,6 +178,16 @@ const usuarioSchema = new Schema<IUsuario>(
       type: Boolean,
       required: true,
       default: true
+    },
+    language: {
+      type: String,
+      enum: ['es', 'ca', 'en'],
+      default: 'es'
+    },
+    theme: {
+      type: String,
+      enum: ['light', 'dark'],
+      default: 'light'
     }
   },
   {
