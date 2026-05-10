@@ -10,6 +10,8 @@ export interface ILastMessage {
   sentAt: Date;
 }
 
+export type ChatStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+
 export interface IChat {
   _id?: Types.ObjectId;
   oferta: Types.ObjectId; // Oferta a la que pertenece el chat
@@ -19,6 +21,7 @@ export interface IChat {
   unreadOwner: number; // Mensajes no leídos por el owner
   unreadInterested: number; // Mensajes no leídos por el interested
   isReadOnly: boolean; // true si la oferta fue eliminada/finalizada
+  status: ChatStatus; // Estado de aprobación del chat
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -70,6 +73,11 @@ const chatSchema = new Schema<IChat>(
     isReadOnly: {
       type: Boolean,
       default: false
+    },
+    status: {
+      type: String,
+      enum: ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
+      default: 'APPROVED'
     }
   },
   {

@@ -6,7 +6,8 @@ import {
   getMyChats,
   getChatMessages,
   markChatAsRead,
-  setChatReadOnly
+  setChatReadOnly,
+  updateChatStatus
 } from '../controllers/chatController.js';
 
 const router = Router();
@@ -47,5 +48,11 @@ router.patch('/:chatId/read', authorizeChatParticipant, asyncWrapper(markChatAsR
  * Solo el owner o admin pueden hacerlo.
  */
 router.patch('/:chatId/readonly', asyncWrapper(setChatReadOnly));
+
+/**
+ * PATCH /api/chats/:chatId/status
+ * Permet aprovar o rebutjar un xat (nomes owner)
+ */
+router.patch('/:chatId/status', asyncWrapper(updateChatStatus));
 
 export default router;
