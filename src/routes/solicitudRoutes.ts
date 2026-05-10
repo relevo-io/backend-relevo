@@ -90,6 +90,30 @@ router.get('/', authenticateToken, authorizeRoles('ADMIN'), solicitudController.
 
 /**
  * @openapi
+ * /api/solicitudes/me/recibidas:
+ *   get:
+ *     summary: Obté la llista de sol·licituds on l'usuari és el propietari de l'oferta
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista de sol·licituds recuperada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Solicitud'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/me/recibidas', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), solicitudController.getMisSolicitudesOwner);
+
+/**
+ * @openapi
  * /api/solicitudes/batch:
  *   delete:
  *     summary: Elimina múltiples solicitudes por una lista de IDs

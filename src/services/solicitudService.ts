@@ -27,8 +27,17 @@ export const eliminarSolicitud = async (id: string): Promise<ISolicitud | null> 
 
 export const listarSolicitudes = async (): Promise<ISolicitud[]> => {
   return await SolicitudModel.find()
-    .populate('interestedUser', 'nombre email') 
+    .populate('interestedUser', 'fullName email') 
     .populate('opportunity', 'companyDescription')
+    .lean()                                   
+    .exec();
+};
+
+export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise<ISolicitud[]> => {
+  return await SolicitudModel.find({ owner: ownerId })
+    .populate('interestedUser', 'fullName email bio professionalBackground cv') 
+    .populate('opportunity', 'companyDescription sector region')
+    .sort({ createdAt: -1 })
     .lean()                                   
     .exec();
 };

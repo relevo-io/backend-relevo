@@ -11,6 +11,16 @@ export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) 
   res.status(200).json(solicitudes);
 });
 
+export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const solicitudes = await solicitudService.obtenerSolicitudesPorPropietario(userId);
+  res.status(200).json(solicitudes);
+});
+
 export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
   const solicitud = await solicitudService.obtenerSolicitudPorId(req.params.id);
   if (!solicitud) {
