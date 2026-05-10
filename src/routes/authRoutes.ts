@@ -7,8 +7,8 @@ import { authenticateToken } from '../middlewares/auth.js';
 const router = express.Router();
 
 const loginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(1)
+  email: z.string().email(),
+  password: z.string().min(1)
 });
 
 /**

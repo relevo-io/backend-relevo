@@ -3,13 +3,7 @@ import { AuthRequest } from '../middlewares/auth.js';
 import { ChatModel } from '../models/chatModel.js';
 import { MensajeModel } from '../models/mensajeModel.js';
 import { OfertaModel } from '../models/ofertaModel.js';
-import {
-  NotFoundError,
-  ForbiddenError,
-  ValidationError,
-  InternalServerError,
-  UnauthorizedError
-} from '../utils/AppError.js';
+import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 import { SolicitudModel } from '../models/solicitudModel.js';
 
 // ─────────────────────────────────────────────
@@ -31,8 +25,8 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
   }
 
   const isCallerOwner = String(oferta.owner) === callerId;
-  
-  // Determinar quién es el interesado: 
+
+  // Determinar quién es el interesado:
   // - Si el que llama es el dueño, debe haber pasado el ID del interesado.
   // - Si el que llama no es el dueño, el interesado es él mismo.
   const targetInterestedId = isCallerOwner ? interestedId : callerId;
@@ -53,7 +47,9 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
   }).lean();
 
   if (!solicitudAceptada) {
-    throw new ForbiddenError('No existe una solicitud aceptada para esta oferta y usuario. El chat no está autorizado.');
+    throw new ForbiddenError(
+      'No existe una solicitud aceptada para esta oferta y usuario. El chat no está autorizado.'
+    );
   }
 
   // Upsert: un solo chat por par (oferta + interested)
@@ -70,7 +66,9 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
       }
     },
     { upsert: true, new: true }
-  ).populate('owner', 'fullName email').populate('interested', 'fullName email');
+  )
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email');
 
   const statusCode = chat.createdAt?.getTime() === chat.updatedAt?.getTime() ? 201 : 200;
   res.status(statusCode).json(chat);

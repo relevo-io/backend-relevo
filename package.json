@@ -1,26 +1,49 @@
 {
   "name": "ea-exercise-restapi",
   "version": "3.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
     "dev": "tsx --watch src/index.ts",
-    "lint": "npx oxlint@latest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "check": "tsc --noEmit",
-    "validate": "npm run lint && npm run check"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "validate": "npm run format:check && npm run lint && npm run check",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.11",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.0.0",
     "@types/sanitize-html": "^2.16.1",
+    "@types/supertest": "^7.2.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "@vitest/ui": "^4.1.5",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
+    "prettier": "^3.8.3",
+    "supertest": "^7.2.2",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.5"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -36,6 +59,13 @@
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.8.4",
     "zod": "^4.3.6"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

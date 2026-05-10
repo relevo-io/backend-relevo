@@ -2,10 +2,10 @@ import { Router } from 'express';
 import * as ofertaController from '../controllers/ofertaController.js';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import {
-	createOfertaSchema,
-	ofertaIdParamsSchema,
-	ofertaQuerySchema,
-	updateOfertaSchema
+  createOfertaSchema,
+  ofertaIdParamsSchema,
+  ofertaQuerySchema,
+  updateOfertaSchema
 } from '../validators/ofertaValidator.js';
 import { authenticateToken, authorizeOfertaOwnerOrAdmin, authorizeRoles } from '../middlewares/auth.js';
 
@@ -174,7 +174,13 @@ router.get('/:id', validate({ params: ofertaIdParamsSchema }), ofertaController.
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), validate({ body: createOfertaSchema }), ofertaController.createOferta);
+router.post(
+  '/',
+  authenticateToken,
+  authorizeRoles('OWNER', 'ADMIN'),
+  validate({ body: createOfertaSchema }),
+  ofertaController.createOferta
+);
 
 /**
  * @openapi
@@ -208,14 +214,14 @@ router.post('/', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), validate({
  *         $ref: '#/components/responses/NotFound'
  */
 router.put(
-	'/:id',
-	authenticateToken,
-	authorizeOfertaOwnerOrAdmin,
-	validate({
-		params: ofertaIdParamsSchema,
-		body: updateOfertaSchema
-	}),
-	ofertaController.updateOferta
+  '/:id',
+  authenticateToken,
+  authorizeOfertaOwnerOrAdmin,
+  validate({
+    params: ofertaIdParamsSchema,
+    body: updateOfertaSchema
+  }),
+  ofertaController.updateOferta
 );
 
 /**
@@ -238,6 +244,12 @@ router.put(
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete('/:id', authenticateToken, authorizeOfertaOwnerOrAdmin, validate({ params: ofertaIdParamsSchema }), ofertaController.deleteOferta);
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeOfertaOwnerOrAdmin,
+  validate({ params: ofertaIdParamsSchema }),
+  ofertaController.deleteOferta
+);
 
 export default router;

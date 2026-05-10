@@ -25,11 +25,11 @@ export const actualizarVisibilidadUsuario = async (id: string, visible: boolean)
   return await UsuarioModel.findByIdAndUpdate(id, { visible }, { returnDocument: 'after' }).lean();
 };
 
-export const actualizarVisibilidadUsuarios = async (ids: string[],visible: boolean): Promise<{ matchedCount: number; modifiedCount: number }> => {
-  const result = await UsuarioModel.updateMany(
-    { _id: { $in: ids } },
-    { $set: { visible } }
-  );
+export const actualizarVisibilidadUsuarios = async (
+  ids: string[],
+  visible: boolean
+): Promise<{ matchedCount: number; modifiedCount: number }> => {
+  const result = await UsuarioModel.updateMany({ _id: { $in: ids } }, { $set: { visible } });
   return {
     matchedCount: result.matchedCount ?? 0,
     modifiedCount: result.modifiedCount ?? 0

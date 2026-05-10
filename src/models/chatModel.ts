@@ -12,13 +12,13 @@ export interface ILastMessage {
 
 export interface IChat {
   _id?: Types.ObjectId;
-  oferta: Types.ObjectId;       // Oferta a la que pertenece el chat
-  owner: Types.ObjectId;        // Propietario de la oferta
-  interested: Types.ObjectId;   // Usuario interesado
-  lastMessage?: ILastMessage;   // Cache del último mensaje (evita queries extra)
-  unreadOwner: number;          // Mensajes no leídos por el owner
-  unreadInterested: number;     // Mensajes no leídos por el interested
-  isReadOnly: boolean;          // true si la oferta fue eliminada/finalizada
+  oferta: Types.ObjectId; // Oferta a la que pertenece el chat
+  owner: Types.ObjectId; // Propietario de la oferta
+  interested: Types.ObjectId; // Usuario interesado
+  lastMessage?: ILastMessage; // Cache del último mensaje (evita queries extra)
+  unreadOwner: number; // Mensajes no leídos por el owner
+  unreadInterested: number; // Mensajes no leídos por el interested
+  isReadOnly: boolean; // true si la oferta fue eliminada/finalizada
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -82,10 +82,7 @@ const chatSchema = new Schema<IChat>(
 // ─────────────────────────────────────────────
 
 // Un solo chat por par oferta+interesado (mismo patrón que Solicitud)
-chatSchema.index(
-  { oferta: 1, interested: 1 },
-  { unique: true, name: 'uniq_oferta_interested' }
-);
+chatSchema.index({ oferta: 1, interested: 1 }, { unique: true, name: 'uniq_oferta_interested' });
 
 // Consultas rápidas de "mis chats" (owner o interested)
 chatSchema.index({ owner: 1, updatedAt: -1 });

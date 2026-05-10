@@ -17,7 +17,7 @@ const app = express();
 /**
  * APPLICATION SETTINGS
  */
-// Set the server port 
+// Set the server port
 app.set('port', apiPort);
 
 /**
@@ -25,19 +25,21 @@ app.set('port', apiPort);
  */
 
 // Enable CORS compatible con múltiples orígenes (Angular y Flutter Web)
-app.use(cors({
+app.use(
+  cors({
     origin: (origin, callback) => {
-        // Allow requests without origin (e.g. Postman), the configured frontend URL,
-        // or any localhost origin (needed for Flutter Web which uses a dynamic port in dev).
-        const isLocalhost = origin && /^http:\/\/localhost(:\d+)?$/.test(origin);
-        if (!origin || origin === config.frontendUrl || isLocalhost) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+      // Allow requests without origin (e.g. Postman), the configured frontend URL,
+      // or any localhost origin (needed for Flutter Web which uses a dynamic port in dev).
+      const isLocalhost = origin && /^http:\/\/localhost(:\d+)?$/.test(origin);
+      if (!origin || origin === config.frontendUrl || isLocalhost) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     },
     credentials: true
-}));
+  })
+);
 
 // Built-in middleware to parse incoming requests with JSON payloads
 app.use(express.json());
@@ -51,11 +53,11 @@ app.use(httpLogger);
  * Simple, stateless endpoint to verify the server is running.
  */
 app.get('/ping', (_req: Request, res: Response) => {
-    res.status(200).json({
-        status: 'ok',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 /**
@@ -78,11 +80,10 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 // Catch-all route for non-existent resources (404 Not Found)
 app.use((req, res) => {
-    res.status(404).json({ message: 'Resource not found' });
+  res.status(404).json({ message: 'Resource not found' });
 });
 
 // Centralized error handler
 app.use(globalErrorHandler);
 
 export default app; // Default export for the server entry point
-
