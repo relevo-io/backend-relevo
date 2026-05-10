@@ -108,6 +108,20 @@ router.get('/', validate({ query: ofertaQuerySchema }), ofertaController.getOfer
 
 /**
  * @openapi
+ * /api/ofertas/me:
+ *   get:
+ *     summary: Obté les ofertes del propietari actual
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista d'ofertes pròpies recuperada correctament
+ */
+router.get('/me', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), ofertaController.getMisOfertas);
+
+/**
+ * @openapi
  * /api/ofertas/{id}:
  *   get:
  *     summary: Obté una oferta específica per ID

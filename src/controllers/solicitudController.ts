@@ -12,12 +12,22 @@ export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) 
 });
 
 export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const ownerId = req.user?.id;
+  if (!ownerId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const solicitudes = await solicitudService.obtenerSolicitudesPorPropietario(ownerId);
+  res.status(200).json(solicitudes);
+});
+
+export const getMisSolicitudesEnviadas = asyncWrapper(async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   if (!userId) {
     throw new UnauthorizedError('No autenticado');
   }
 
-  const solicitudes = await solicitudService.obtenerSolicitudesPorPropietario(userId);
+  const solicitudes = await solicitudService.obtenerSolicitudesPorInteresado(userId);
   res.status(200).json(solicitudes);
 });
 
@@ -103,4 +113,20 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) =
   });
 
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
+});
+
+export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const { ofertaId } = req.params;
+
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const solicitud = await SolicitudModel.findOne({
+    opportunity: ofertaId,
+    interestedUser: userId
+  }).lean();
+
+  res.status(200).json(solicitud);
 });

@@ -113,6 +113,46 @@ router.get('/', authenticateToken, authorizeRoles('ADMIN'), solicitudController.
 router.get('/me/recibidas', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), solicitudController.getMisSolicitudesOwner);
 
 /**
+ * @swagger
+ * /api/solicitudes/me/enviadas:
+ *   get:
+ *     summary: Obtener solicitudes enviadas por el usuario actual (como interesado)
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de solicitudes enviadas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Solicitud'
+ */
+router.get('/me/enviadas', authenticateToken, authorizeRoles('INTERESTED', 'ADMIN'), solicitudController.getMisSolicitudesEnviadas);
+
+/**
+ * @swagger
+ * /api/solicitudes/oferta/{ofertaId}/me:
+ *   get:
+ *     summary: Obtener la solicitud del usuario actual para una oferta específica
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: ofertaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Datos de la solicitud o null
+ */
+router.get('/oferta/:ofertaId/me', authenticateToken, solicitudController.getMiSolicitudPorOferta);
+
+/**
  * @openapi
  * /api/solicitudes/batch:
  *   delete:

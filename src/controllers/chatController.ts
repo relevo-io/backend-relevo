@@ -7,16 +7,18 @@ import {
   NotFoundError,
   ForbiddenError,
   ValidationError,
-  InternalServerError
+  InternalServerError,
+  UnauthorizedError
 } from '../utils/AppError.js';
+import { SolicitudModel } from '../models/solicitudModel.js';
 
 // ─────────────────────────────────────────────
 //  POST /api/chats
 //  Crea o recupera un chat existente para (oferta + interesado)
 // ─────────────────────────────────────────────
 export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
-  const { ofertaId } = req.body;
+  const callerId = req.user!.id;
+  const { ofertaId, interestedId } = req.body;
 
   if (!ofertaId) {
     throw new ValidationError('ofertaId es requerido');
@@ -28,19 +30,40 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
     throw new NotFoundError('Oferta no encontrada');
   }
 
-  // El owner no puede chatear consigo mismo
-  if (String(oferta.owner) === userId) {
-    throw new ForbiddenError('No puedes iniciar un chat en tu propia oferta');
+  const isCallerOwner = String(oferta.owner) === callerId;
+  
+  // Determinar quién es el interesado: 
+  // - Si el que llama es el dueño, debe haber pasado el ID del interesado.
+  // - Si el que llama no es el dueño, el interesado es él mismo.
+  const targetInterestedId = isCallerOwner ? interestedId : callerId;
+
+  if (!targetInterestedId) {
+    throw new ValidationError('interestedId es requerido cuando el propietario inicia el chat');
+  }
+
+  if (String(oferta.owner) === String(targetInterestedId)) {
+    throw new ForbiddenError('No puedes iniciar un chat contigo mismo');
+  }
+
+  // VERIFICACIÓN CRÍTICA: Debe existir una Solicitud con status ACCEPTED
+  const solicitudAceptada = await SolicitudModel.findOne({
+    opportunity: ofertaId,
+    interestedUser: targetInterestedId,
+    status: 'ACCEPTED'
+  }).lean();
+
+  if (!solicitudAceptada) {
+    throw new ForbiddenError('No existe una solicitud aceptada para esta oferta y usuario. El chat no está autorizado.');
   }
 
   // Upsert: un solo chat por par (oferta + interested)
   const chat = await ChatModel.findOneAndUpdate(
-    { oferta: ofertaId, interested: userId },
+    { oferta: ofertaId, interested: targetInterestedId },
     {
       $setOnInsert: {
         oferta: ofertaId,
         owner: oferta.owner,
-        interested: userId,
+        interested: targetInterestedId,
         unreadOwner: 0,
         unreadInterested: 0,
         isReadOnly: false

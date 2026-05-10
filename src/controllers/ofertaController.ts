@@ -69,3 +69,13 @@ export const deleteOferta = asyncWrapper(async (req: Request<{ id: string }>, re
 
   res.status(204).send();
 });
+
+export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const ofertas = await ofertaService.obtenerOfertasPorOwner(userId);
+  res.status(200).json(ofertas);
+});

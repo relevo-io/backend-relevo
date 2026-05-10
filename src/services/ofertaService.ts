@@ -23,3 +23,7 @@ export const listarOfertas = async (options?: { excludeOwnerId?: string }): Prom
 
   return await OfertaModel.find(filter).lean();
 };
+
+export const obtenerOfertasPorOwner = async (ownerId: string): Promise<IOferta[]> => {
+  return await OfertaModel.find({ owner: ownerId }).sort({ createdAt: -1 }).lean();
+};

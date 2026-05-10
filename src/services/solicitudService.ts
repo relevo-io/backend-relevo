@@ -42,6 +42,16 @@ export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise
     .exec();
 };
 
+export const obtenerSolicitudesPorInteresado = async (userId: string): Promise<ISolicitud[]> => {
+  return await SolicitudModel.find({ interestedUser: userId })
+    .populate('interestedUser', 'fullName email') 
+    .populate('owner', 'fullName email')
+    .populate('opportunity', 'companyDescription sector region')
+    .sort({ createdAt: -1 })
+    .lean()                                   
+    .exec();
+};
+
 export const actualizarEstadoSolicitud = async (
   id: string,
   status: ISolicitud['status']
