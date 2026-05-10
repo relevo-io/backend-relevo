@@ -28,7 +28,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 
 # Instalamos SOLO las dependencias de producción
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 # Por seguridad, no ejecutamos como root
 USER node
