@@ -30,7 +30,8 @@ export const login = asyncWrapper(async (req: Request, res: Response, next: Next
             fullName: usuario.fullName,
             email: usuario.email,
             roles: usuario.roles,
-            language: usuario.language
+            language: usuario.language,
+            theme: usuario.theme
         }
     });
 });
