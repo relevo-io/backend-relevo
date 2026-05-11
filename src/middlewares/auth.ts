@@ -37,18 +37,24 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
-export const authorizeRoles = (...allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>) => {
+export const authorizeRoles = (..._allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
     }
 
+    // BYPASS TEMPORAL PER A LA DEMO:
+    // Permet que qualsevol usuari registrat passi el control de rols.
+    next();
+
+    /* CODI ORIGINAL (desactivat temporalment per a la demo):
     const isAllowed = req.user.roles.some((role) => allowedRoles.includes(role));
     if (!isAllowed) {
       return next(new ForbiddenError('No autorizado por rol'));
     }
 
     next();
+    */
   };
 };
 
