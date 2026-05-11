@@ -59,6 +59,10 @@ export function initSocketServer(httpServer: HttpServer): SocketIOServer {
 
   // ── Register handlers per connection ──────────────
   io.on('connection', (socket: Socket) => {
+    const userId = socket.data.user.id;
+    socket.join(`user:${userId}`);
+    logger.info('[Socket] User joined personal room: user:%s', userId);
+
     registerChatHandlers(io, socket);
 
     socket.on('disconnect', (reason) => {

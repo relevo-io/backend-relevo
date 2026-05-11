@@ -46,26 +46,32 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
     status: 'ACCEPTED'
   }).lean();
 
-  const initialStatus = solicitudAceptada ? 'APPROVED' : 'PENDING_APPROVAL';
-
   // Upsert: un solo chat por par (oferta + interested)
-  const chat = await ChatModel.findOneAndUpdate(
-    { oferta: ofertaId, interested: targetInterestedId },
-    {
-      $setOnInsert: {
-        oferta: ofertaId,
-        owner: oferta.owner,
-        interested: targetInterestedId,
-        unreadOwner: 0,
-        unreadInterested: 0,
-        isReadOnly: false,
-        status: initialStatus
-      },
-      // Si el xat ja existia però ara tenim una sol·licitud acceptada, l'aprovem
-      ...(solicitudAceptada ? { $set: { status: 'APPROVED' } } : {})
-    },
-    { upsert: true, new: true }
-  )
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const update: any = {
+    $setOnInsert: {
+      oferta: ofertaId,
+      owner: oferta.owner,
+      interested: targetInterestedId,
+      unreadOwner: 0,
+      unreadInterested: 0,
+      isReadOnly: false
+    }
+  };
+
+  if (solicitudAceptada) {
+    // Si està acceptada, volem que sigui APPROVED tant si és nou com si ja existia
+    update.$set = { status: 'APPROVED' };
+  } else {
+    // Si no està acceptada, només el marquem com a PENDING_APPROVAL si és la primera vegada
+    update.$setOnInsert.status = 'PENDING_APPROVAL';
+  }
+
+  const chat = await ChatModel.findOneAndUpdate({ oferta: ofertaId, interested: targetInterestedId }, update, {
+    upsert: true,
+    new: true,
+    runValidators: true
+  })
     .populate('owner', 'fullName email')
     .populate('interested', 'fullName email');
 

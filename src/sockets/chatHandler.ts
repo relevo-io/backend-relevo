@@ -155,6 +155,13 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       // Broadcast to everyone in the room EXCEPT the sender
       socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
 
+      // Notify the recipient's personal room (for real-time list updates)
+      const recipientId = isOwner ? String(chat.interested) : String(chat.owner);
+      io.to(`user:${recipientId}`).emit('chat_notification', {
+        chatId,
+        message: mensajePopulated
+      });
+
       // Acknowledgement — frontend knows message hit the DB
       callback?.({ ok: true, message: mensajePopulated });
 
