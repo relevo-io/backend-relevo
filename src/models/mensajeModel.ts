@@ -1,4 +1,38 @@
 import { Schema, model, Types } from 'mongoose';
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Mensaje:
+ *       type: object
+ *       required:
+ *         - chat
+ *         - sender
+ *         - content
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID autogenerado de MongoDB
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d5'
+ *         chat:
+ *           type: string
+ *           description: ID del xat (referència a Chat)
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         sender:
+ *           type: string
+ *           description: ID de l'usuari que envia (referència a Usuario)
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         content:
+ *           type: string
+ *           description: Contingut del missatge
+ *           example: 'Hola, com estàs?'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
 
 // ─────────────────────────────────────────────
 //  INTERFACES
