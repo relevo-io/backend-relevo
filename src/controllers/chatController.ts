@@ -24,7 +24,7 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
     throw new NotFoundError('Oferta no encontrada');
   }
 
-  const isCallerOwner = String(oferta.owner) === callerId;
+  const isCallerOwner = String(oferta.owner) === String(callerId);
 
   // Determinar quién es el interesado:
   // - Si el que llama es el dueño, debe haber pasado el ID del interesado.
@@ -39,34 +39,39 @@ export const getOrCreateChat = async (req: AuthRequest, res: Response) => {
     throw new ForbiddenError('No puedes iniciar un chat contigo mismo');
   }
 
-  // VERIFICACIÓN CRÍTICA: Debe existir una Solicitud con status ACCEPTED
+  // VERIFICACIÓ: Si existeix una sol·licitud ACCEPTADA, el xat s'aprova automàticament
   const solicitudAceptada = await SolicitudModel.findOne({
     opportunity: ofertaId,
     interestedUser: targetInterestedId,
     status: 'ACCEPTED'
   }).lean();
 
-  if (!solicitudAceptada) {
-    throw new ForbiddenError(
-      'No existe una solicitud aceptada para esta oferta y usuario. El chat no está autorizado.'
-    );
+  // Upsert: un solo chat por par (oferta + interested)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const update: any = {
+    $setOnInsert: {
+      oferta: ofertaId,
+      owner: oferta.owner,
+      interested: targetInterestedId,
+      unreadOwner: 0,
+      unreadInterested: 0,
+      isReadOnly: false
+    }
+  };
+
+  if (solicitudAceptada) {
+    // Si està acceptada, volem que sigui APPROVED tant si és nou com si ja existia
+    update.$set = { status: 'APPROVED' };
+  } else {
+    // Si no està acceptada, només el marquem com a PENDING_APPROVAL si és la primera vegada
+    update.$setOnInsert.status = 'PENDING_APPROVAL';
   }
 
-  // Upsert: un solo chat por par (oferta + interested)
-  const chat = await ChatModel.findOneAndUpdate(
-    { oferta: ofertaId, interested: targetInterestedId },
-    {
-      $setOnInsert: {
-        oferta: ofertaId,
-        owner: oferta.owner,
-        interested: targetInterestedId,
-        unreadOwner: 0,
-        unreadInterested: 0,
-        isReadOnly: false
-      }
-    },
-    { upsert: true, new: true }
-  )
+  const chat = await ChatModel.findOneAndUpdate({ oferta: ofertaId, interested: targetInterestedId }, update, {
+    upsert: true,
+    new: true,
+    runValidators: true
+  })
     .populate('owner', 'fullName email')
     .populate('interested', 'fullName email');
 
@@ -167,4 +172,34 @@ export const setChatReadOnly = async (req: AuthRequest, res: Response) => {
 
   await ChatModel.findByIdAndUpdate(chatId, { $set: { isReadOnly: true } });
   res.status(200).json({ ok: true });
+};
+
+// ─────────────────────────────────────────────
+//  PATCH /api/chats/:chatId/status
+//  Permite al receptor (owner) aceptar o rechazar un chat pendiente
+// ─────────────────────────────────────────────
+export const updateChatStatus = async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const { status } = req.body;
+
+  if (!['APPROVED', 'REJECTED'].includes(status)) {
+    throw new ValidationError('Estado no válido');
+  }
+
+  const chat = await ChatModel.findById(chatId).select('owner').lean();
+  if (!chat) {
+    throw new NotFoundError('Chat no encontrado');
+  }
+
+  // Solo el owner puede aprobar un chat iniciado por un interesado
+  if (String(chat.owner) !== userId) {
+    throw new ForbiddenError('No autorizado para cambiar el estado del xat');
+  }
+
+  const updated = await ChatModel.findByIdAndUpdate(chatId, { $set: { status } }, { new: true }).populate(
+    'owner interested oferta'
+  );
+
+  res.status(200).json(updated);
 };

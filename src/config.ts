@@ -16,6 +16,7 @@ export const config = {
   mongoUri: process.env.MONGO_URI,
   logLevel: process.env.LOG_LEVEL || 'info',
   frontendUrl: process.env.FRONTEND_URL,
+  apiUrl: process.env.API_URL,
   bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'LlaveSecretaDefault',

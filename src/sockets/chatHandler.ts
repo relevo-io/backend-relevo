@@ -36,7 +36,7 @@ function sanitizeContent(raw: string): string {
 // ─────────────────────────────────────────────
 
 export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
-  const userId = socket.data.user.id;
+  const userId = socket.data.user?.id;
 
   // ── join_chat ────────────────────────────────
   // Client emits: { chatId: string }
@@ -56,7 +56,9 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
         return callback?.({ ok: false, error: 'Chat no encontrado' });
       }
 
-      const isParticipant = String(chat.owner) === userId || String(chat.interested) === userId;
+      const isOwner = String(chat.owner) === String(userId);
+      const isInterested = String(chat.interested) === String(userId);
+      const isParticipant = isOwner || isInterested;
 
       if (!isParticipant) {
         logger.warn('[Socket] join_chat rejected — user %s is not participant of chat %s', userId, chatId);
@@ -153,6 +155,13 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       // Broadcast to everyone in the room EXCEPT the sender
       socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
 
+      // Notify the recipient's personal room (for real-time list updates)
+      const recipientId = isOwner ? String(chat.interested) : String(chat.owner);
+      io.to(`user:${recipientId}`).emit('chat_notification', {
+        chatId,
+        message: mensajePopulated
+      });
+
       // Acknowledgement — frontend knows message hit the DB
       callback?.({ ok: true, message: mensajePopulated });
 
@@ -163,7 +172,6 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
     }
   });
 
-  // ── typing_start ─────────────────────────────
   socket.on('typing_start', (payload: { chatId: string }) => {
     const { chatId } = payload ?? {};
     if (!chatId) return;
@@ -182,7 +190,6 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
     );
   });
 
-  // ── typing_stop ──────────────────────────────
   socket.on('typing_stop', (payload: { chatId: string }) => {
     const { chatId } = payload ?? {};
     if (!chatId) return;
@@ -195,7 +202,6 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
     socket.to(roomName(chatId)).emit('typing_stop', { userId });
   });
 
-  // ── leave_chat ───────────────────────────────
   socket.on('leave_chat', (payload: { chatId: string }) => {
     const { chatId } = payload ?? {};
     if (!chatId) return;
@@ -231,7 +237,6 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
     }
   });
 
-  // ── disconnect cleanup ────────────────────────
   socket.on('disconnect', () => {
     const chatId = socket.data.activeChatId;
     if (chatId) {
