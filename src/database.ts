@@ -41,7 +41,7 @@ export async function seedingDatabase(): Promise<void> {
         preferredRegions: ['Catalunya', 'Madrid', 'Europe']
       },
       {
-        roles: ['OWNER'],
+        roles: ['OWNER', 'INTERESTED'],
         fullName: 'Paula Tolosa',
         email: 'paula@gmail.com',
         password: commonPass,
@@ -51,7 +51,7 @@ export async function seedingDatabase(): Promise<void> {
         preferredRegions: ['Maresme', 'Barcelona']
       },
       {
-        roles: ['INTERESTED'],
+        roles: ['OWNER', 'INTERESTED'],
         fullName: 'Pablo Casado',
         email: 'pabloc@gmail.com',
         password: commonPass,
@@ -61,7 +61,7 @@ export async function seedingDatabase(): Promise<void> {
         preferredRegions: ['Comunidad de Madrid', 'Zaragoza']
       },
       {
-        roles: ['OWNER'],
+        roles: ['OWNER', 'INTERESTED'],
         fullName: 'Pablo Santamaría',
         email: 'pablos@gmail.com',
         password: commonPass,
@@ -71,7 +71,7 @@ export async function seedingDatabase(): Promise<void> {
         preferredRegions: ['London', 'Barcelona', 'Berlin']
       },
       {
-        roles: ['INTERESTED'],
+        roles: ['OWNER', 'INTERESTED'],
         fullName: 'Andrea Zapata',
         email: 'andrea@gmail.com',
         password: commonPass,
