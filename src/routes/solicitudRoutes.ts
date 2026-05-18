@@ -5,7 +5,8 @@ import {
   createSolicitudSchema,
   solicitudIdParamsSchema,
   updateSolicitudSchema,
-  updateSolicitudStatusSchema
+  updateSolicitudStatusSchema,
+  guardarCvSchema
 } from '../validators/solicitudValidator.js';
 import {
   authenticateToken,
@@ -434,7 +435,15 @@ router.patch(
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.patch('/:id/guardar-cv', authenticateToken, solicitudController.guardarCvKey);
+router.patch(
+  '/:id/guardar-cv',
+  authenticateToken,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: guardarCvSchema
+  }),
+  solicitudController.guardarCvKey
+);
 
 /**
  * @openapi
@@ -465,6 +474,12 @@ router.patch('/:id/guardar-cv', authenticateToken, solicitudController.guardarCv
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id/ver-cv', authenticateToken, authorizeSolicitudParticipantOrAdmin, solicitudController.verCv);
+router.get(
+  '/:id/ver-cv',
+  authenticateToken,
+  authorizeSolicitudParticipantOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.verCv
+);
 
 export default router;

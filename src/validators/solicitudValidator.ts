@@ -30,7 +30,14 @@ export const updateSolicitudStatusSchema = z
   })
   .strict();
 
+export const guardarCvSchema = z
+  .object({
+    cvKey: z.string().min(1, 'El cvKey es requerido')
+  })
+  .strict();
+
 export type SolicitudIdParams = z.infer<typeof solicitudIdParamsSchema>;
 export type CreateSolicitudBody = z.infer<typeof createSolicitudSchema>;
 export type UpdateSolicitudBody = z.infer<typeof updateSolicitudSchema>;
 export type UpdateSolicitudStatusBody = z.infer<typeof updateSolicitudStatusSchema>;
+export type GuardarCvBody = z.infer<typeof guardarCvSchema>;

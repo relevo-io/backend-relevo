@@ -1,10 +1,8 @@
 import { Router } from 'express';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth.js';
-import { generarPresignedPut } from '../services/storageService.js';
-import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { ValidationError } from '../utils/AppError.js';
-import { AuthRequest } from '../middlewares/auth.js';
-import { Response } from 'express';
+import { validate } from '../middlewares/validatorMiddleware.js';
+import { presignedUrlQuerySchema } from '../validators/storageValidator.js';
+import * as storageController from '../controllers/storageController.js';
 
 const router = Router();
 
@@ -46,17 +44,8 @@ router.get(
   '/presigned-url',
   authenticateToken,
   authorizeRoles('INTERESTED', 'ADMIN'),
-  asyncWrapper(async (req: AuthRequest, res: Response) => {
-    const { filename } = req.query;
-
-    if (!filename || typeof filename !== 'string' || !filename.trim()) {
-      throw new ValidationError('El parámetro "filename" es requerido');
-    }
-
-    const { uploadUrl, s3Key } = await generarPresignedPut(filename.trim());
-
-    res.status(200).json({ uploadUrl, s3Key });
-  })
+  validate({ query: presignedUrlQuerySchema }),
+  storageController.getPresignedUrl
 );
 
 export default router;

@@ -1,7 +1,6 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import sanitizeHtml from 'sanitize-html';
-import { ChatModel } from '../models/chatModel.js';
-import { MensajeModel } from '../models/mensajeModel.js';
+import * as chatService from '../services/chatService.js';
 import { logger } from '../config.js';
 
 // ─────────────────────────────────────────────
@@ -50,7 +49,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       }
 
       // Security: verify participant in DB before joining room
-      const chat = await ChatModel.findById(chatId).select('owner interested').lean();
+      const chat = await chatService.obtenerChatBasicoPorId(chatId);
 
       if (!chat) {
         return callback?.({ ok: false, error: 'Chat no encontrado' });
@@ -105,7 +104,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       }
 
       // Verify participant
-      const chat = await ChatModel.findById(chatId).select('owner interested isReadOnly').lean();
+      const chat = await chatService.obtenerChatBasicoPorId(chatId);
       if (!chat) {
         return callback?.({ ok: false, error: 'Chat no encontrado' });
       }
@@ -129,28 +128,17 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       }
 
       // Persist message
-      const mensaje = await MensajeModel.create({
-        chat: chatId,
-        sender: userId,
-        content
-      });
+      const mensaje = await chatService.guardarMensaje(chatId, userId, content);
 
       // Determine which unread counter to increment
       const isOwner = String(chat.owner) === userId;
-      const unreadUpdate = isOwner ? { $inc: { unreadInterested: 1 } } : { $inc: { unreadOwner: 1 } };
+      const unreadUpdate = isOwner ? { unreadInterested: 1 } : { unreadOwner: 1 };
 
       // Update Chat: lastMessage cache + unread counter + updatedAt
-      await ChatModel.findByIdAndUpdate(chatId, {
-        ...unreadUpdate,
-        lastMessage: {
-          content,
-          senderId: userId,
-          sentAt: mensaje.createdAt
-        }
-      });
+      await chatService.actualizarChatConNuevoMensaje(chatId, unreadUpdate, content, userId, mensaje.createdAt!);
 
       // Build response payload (populate sender info)
-      const mensajePopulated = await MensajeModel.findById(mensaje._id).populate('sender', 'fullName').lean();
+      const mensajePopulated = await chatService.obtenerMensajePoblado(String(mensaje._id));
 
       // Broadcast to everyone in the room EXCEPT the sender
       socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
@@ -223,7 +211,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       const { chatId } = payload ?? {};
       if (!chatId) return;
 
-      const chat = await ChatModel.findById(chatId).select('owner interested').lean();
+      const chat = await chatService.obtenerChatBasicoPorId(chatId);
       if (!chat) return;
 
       const isOwner = String(chat.owner) === userId;
@@ -231,7 +219,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
       if (!isOwner && !isInterested) return;
 
       const resetUpdate = isOwner ? { unreadOwner: 0 } : { unreadInterested: 0 };
-      await ChatModel.findByIdAndUpdate(chatId, { $set: resetUpdate });
+      await chatService.resetearContadorNoLeidos(chatId, resetUpdate);
     } catch (err) {
       logger.error({ err }, '[Socket] mark_read error');
     }

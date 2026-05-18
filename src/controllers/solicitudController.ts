@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
+import { ISolicitud } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
-import { OfertaModel } from '../models/ofertaModel.js';
+import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError } from '../utils/AppError.js';
@@ -49,7 +49,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     throw new UnauthorizedError('No autenticado');
   }
 
-  const oferta = await OfertaModel.findById(opportunityId);
+  const oferta = await ofertaService.obtenerOfertaPorId(opportunityId);
   if (!oferta) {
     throw new NotFoundError('Oferta no encontrada');
   }
@@ -63,7 +63,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     message
   });
 
-  const resultado = await SolicitudModel.findById(nueva._id).populate('opportunity').populate('interestedUser').lean();
+  const resultado = await solicitudService.obtenerSolicitudConDetalles(String(nueva._id));
 
   res.status(201).json(resultado);
 });
@@ -106,9 +106,7 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) =
     throw new ValidationError('Se requiere un array de IDs');
   }
 
-  await SolicitudModel.deleteMany({
-    _id: { $in: ids }
-  });
+  await solicitudService.eliminarSolicitudesPorIds(ids);
 
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
 });
@@ -121,10 +119,7 @@ export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res
     throw new UnauthorizedError('No autenticado');
   }
 
-  const solicitud = await SolicitudModel.findOne({
-    opportunity: ofertaId,
-    interestedUser: userId
-  }).lean();
+  const solicitud = await solicitudService.obtenerSolicitudPorOfertaYUsuario(ofertaId, userId);
 
   res.status(200).json(solicitud);
 });
@@ -139,11 +134,8 @@ export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response)
   if (!userId) throw new UnauthorizedError('No autenticado');
 
   const { cvKey } = req.body;
-  if (!cvKey || typeof cvKey !== 'string') {
-    throw new ValidationError('El campo cvKey es requerido');
-  }
 
-  const solicitud = await SolicitudModel.findById(req.params['id']).lean();
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
   if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
 
   // Only the candidate (interestedUser) can attach their own CV
@@ -151,7 +143,7 @@ export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response)
     throw new ForbiddenError('No autorizado para modificar esta solicitud');
   }
 
-  const updated = await SolicitudModel.findByIdAndUpdate(req.params['id'], { cvKey }, { new: true }).lean();
+  const updated = await solicitudService.actualizarSolicitud(req.params['id'], { cvKey });
 
   res.status(200).json(updated);
 });
@@ -162,7 +154,7 @@ export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response)
  * Accessible by the candidate (interestedUser) or the recruiter (owner).
  */
 export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
-  const solicitud = await SolicitudModel.findById(req.params['id']).lean();
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
   if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
 
   if (!solicitud.cvKey) {
