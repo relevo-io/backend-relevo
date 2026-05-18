@@ -400,4 +400,71 @@ router.patch(
   solicitudController.patchEstadoSolicitud
 );
 
+/**
+ * @openapi
+ * /api/solicitudes/{id}/guardar-cv:
+ *   patch:
+ *     summary: Guarda la clave S3 del CV tras la subida directa desde el cliente
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - cvKey
+ *             properties:
+ *               cvKey:
+ *                 type: string
+ *                 description: Clave del objeto en S3
+ *     responses:
+ *       200:
+ *         description: Solicitud actualizada con la clave del CV
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch('/:id/guardar-cv', authenticateToken, solicitudController.guardarCvKey);
+
+/**
+ * @openapi
+ * /api/solicitudes/{id}/ver-cv:
+ *   get:
+ *     summary: Genera un enlace temporal (2 min) de lectura del CV en S3
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: URL de lectura generada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 viewUrl:
+ *                   type: string
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/:id/ver-cv', authenticateToken, authorizeSolicitudParticipantOrAdmin, solicitudController.verCv);
+
 export default router;

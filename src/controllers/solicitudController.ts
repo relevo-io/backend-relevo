@@ -4,7 +4,8 @@ import * as solicitudService from '../services/solicitudService.js';
 import { OfertaModel } from '../models/ofertaModel.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError, UnauthorizedError, ValidationError } from '../utils/AppError.js';
+import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError } from '../utils/AppError.js';
+import { generarPresignedGet } from '../services/storageService.js';
 
 export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
   const solicitudes = await solicitudService.listarSolicitudes();
@@ -126,4 +127,48 @@ export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res
   }).lean();
 
   res.status(200).json(solicitud);
+});
+
+/**
+ * PATCH /api/solicitudes/:id/guardar-cv
+ * Saves the S3 key of the CV after the client has uploaded it directly to S3.
+ * Only the interestedUser (candidate) of this solicitud can call this endpoint.
+ */
+export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) throw new UnauthorizedError('No autenticado');
+
+  const { cvKey } = req.body;
+  if (!cvKey || typeof cvKey !== 'string') {
+    throw new ValidationError('El campo cvKey es requerido');
+  }
+
+  const solicitud = await SolicitudModel.findById(req.params['id']).lean();
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  // Only the candidate (interestedUser) can attach their own CV
+  if (String(solicitud.interestedUser) !== userId && !req.user?.roles.includes('ADMIN')) {
+    throw new ForbiddenError('No autorizado para modificar esta solicitud');
+  }
+
+  const updated = await SolicitudModel.findByIdAndUpdate(req.params['id'], { cvKey }, { new: true }).lean();
+
+  res.status(200).json(updated);
+});
+
+/**
+ * GET /api/solicitudes/:id/ver-cv
+ * Generates a 2-minute pre-signed GET URL for the CV stored in S3.
+ * Accessible by the candidate (interestedUser) or the recruiter (owner).
+ */
+export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const solicitud = await SolicitudModel.findById(req.params['id']).lean();
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  if (!solicitud.cvKey) {
+    throw new NotFoundError('Esta solicitud no tiene un CV adjunto');
+  }
+
+  const viewUrl = await generarPresignedGet(solicitud.cvKey);
+  res.status(200).json({ viewUrl });
 });

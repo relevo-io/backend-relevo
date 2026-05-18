@@ -1,6 +1,7 @@
 import { Schema, model, Types } from 'mongoose';
 
 export const accessRequestStatuses = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+export const analysisStatuses = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'ERROR'] as const;
 
 /**
  * @openapi
@@ -52,6 +53,9 @@ export interface ISolicitud {
   opportunity: Types.ObjectId;
   status: (typeof accessRequestStatuses)[number];
   message?: string;
+  cvKey?: string;
+  estadoAnalisis?: (typeof analysisStatuses)[number];
+  resultadoIa?: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -83,6 +87,19 @@ const solicitudSchema = new Schema<ISolicitud>(
       type: String,
       required: false,
       maxlength: 1000
+    },
+    cvKey: {
+      type: String,
+      required: false
+    },
+    estadoAnalisis: {
+      type: String,
+      enum: analysisStatuses,
+      required: false
+    },
+    resultadoIa: {
+      type: Schema.Types.Mixed,
+      required: false
     }
   },
   {

@@ -37,6 +37,16 @@ export const config = {
 };
 
 /**
+ * AWS S3 CONFIGURATION
+ */
+export const awsConfig = {
+  region: process.env.AWS_REGION || 'us-east-1',
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  bucketName: process.env.AWS_S3_BUCKET_NAME || ''
+};
+
+/**
  * PINO LOGGER CONFIGURATION
  * We use 'pino-pretty' in development for readable logs,
  * but in production, it sends structured JSON.
