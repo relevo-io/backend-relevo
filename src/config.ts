@@ -58,12 +58,14 @@ export const awsConfig = {
 
 export const logger = pino({
   level: config.logLevel,
-  transport: {
-    target: 'pino-pretty', // Makes logs readable in the terminal
-    options: {
-      colorize: true,
-      translateTime: 'HH:MM:ss Z',
-      ignore: 'pid,hostname'
+  ...(process.env.NODE_ENV !== 'production' && {
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname'
+      }
     }
-  }
+  })
 });
