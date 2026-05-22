@@ -33,7 +33,21 @@ export const config = {
       sameSite: 'lax' as const,
       path: '/'
     }
+  },
+  pythonService: {
+    url: process.env.PYTHON_SERVICE_URL || 'http://localhost:8000',
+    apiKey: process.env.PYTHON_SERVICE_API_KEY || 'default_secret_key'
   }
+};
+
+/**
+ * AWS S3 CONFIGURATION
+ */
+export const awsConfig = {
+  region: process.env.AWS_REGION || 'us-east-1',
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  bucketName: process.env.AWS_S3_BUCKET_NAME || ''
 };
 
 /**
@@ -44,12 +58,14 @@ export const config = {
 
 export const logger = pino({
   level: config.logLevel,
-  transport: {
-    target: 'pino-pretty', // Makes logs readable in the terminal
-    options: {
-      colorize: true,
-      translateTime: 'HH:MM:ss Z',
-      ignore: 'pid,hostname'
+  ...(process.env.NODE_ENV !== 'production' && {
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname'
+      }
     }
-  }
+  })
 });

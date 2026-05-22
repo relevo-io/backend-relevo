@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
-import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
+import { ISolicitud } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
-import { OfertaModel } from '../models/ofertaModel.js';
+import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError, UnauthorizedError, ValidationError } from '../utils/AppError.js';
+import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError, AppError } from '../utils/AppError.js';
+import { generarPresignedGet } from '../services/storageService.js';
+import { solicitarAnalisisIA } from '../services/aiService.js';
+import { logger } from '../config.js';
 
 export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
   const solicitudes = await solicitudService.listarSolicitudes();
@@ -48,7 +51,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     throw new UnauthorizedError('No autenticado');
   }
 
-  const oferta = await OfertaModel.findById(opportunityId);
+  const oferta = await ofertaService.obtenerOfertaPorId(opportunityId);
   if (!oferta) {
     throw new NotFoundError('Oferta no encontrada');
   }
@@ -62,7 +65,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     message
   });
 
-  const resultado = await SolicitudModel.findById(nueva._id).populate('opportunity').populate('interestedUser').lean();
+  const resultado = await solicitudService.obtenerSolicitudConDetalles(String(nueva._id));
 
   res.status(201).json(resultado);
 });
@@ -105,9 +108,7 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) =
     throw new ValidationError('Se requiere un array de IDs');
   }
 
-  await SolicitudModel.deleteMany({
-    _id: { $in: ids }
-  });
+  await solicitudService.eliminarSolicitudesPorIds(ids);
 
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
 });
@@ -120,10 +121,111 @@ export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res
     throw new UnauthorizedError('No autenticado');
   }
 
-  const solicitud = await SolicitudModel.findOne({
-    opportunity: ofertaId,
-    interestedUser: userId
-  }).lean();
+  const solicitud = await solicitudService.obtenerSolicitudPorOfertaYUsuario(ofertaId, userId);
 
   res.status(200).json(solicitud);
+});
+
+/**
+ * PATCH /api/solicitudes/:id/guardar-cv
+ * Saves the S3 key of the CV after the client has uploaded it directly to S3.
+ * Only the interestedUser (candidate) of this solicitud can call this endpoint.
+ */
+export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) throw new UnauthorizedError('No autenticado');
+
+  const { cvKey } = req.body;
+
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  // Only the candidate (interestedUser) can attach their own CV
+  if (String(solicitud.interestedUser) !== userId && !req.user?.roles.includes('ADMIN')) {
+    throw new ForbiddenError('No autorizado para modificar esta solicitud');
+  }
+
+  const updated = await solicitudService.actualizarSolicitud(req.params['id'], { cvKey });
+
+  res.status(200).json(updated);
+});
+
+/**
+ * GET /api/solicitudes/:id/ver-cv
+ * Generates a 2-minute pre-signed GET URL for the CV stored in S3.
+ * Accessible by the candidate (interestedUser) or the recruiter (owner).
+ */
+export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  if (!solicitud.cvKey) {
+    throw new NotFoundError('Esta solicitud no tiene un CV adjunto');
+  }
+
+  const viewUrl = await generarPresignedGet(solicitud.cvKey);
+  res.status(200).json({ viewUrl });
+});
+
+/**
+ * POST /api/solicitudes/:id/analizar-cv
+ * Inicia el proceso de análisis del CV adjunto a la solicitud mediante Inteligencia Artificial.
+ * Restringido al propietario del negocio (owner) o un ADMIN.
+ */
+export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const userRoles = req.user?.roles || [];
+  if (!userId) throw new UnauthorizedError('No autenticado');
+
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  // Seguridad: Solo el dueño de la oferta (owner) o el ADMIN pueden analizar el CV
+  const isOwner = String(solicitud.owner) === userId;
+  const isAdmin = userRoles.includes('ADMIN');
+  if (!isOwner && !isAdmin) {
+    throw new ForbiddenError('No autorizado para iniciar el análisis de esta solicitud');
+  }
+
+  if (!solicitud.cvKey) {
+    throw new ValidationError('Esta solicitud no contiene un currículum adjunto');
+  }
+
+  // Cambiar estado a EN_PROCESO temporalmente
+  await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+    estadoAnalisis: 'EN_PROCESO'
+  });
+
+  try {
+    // Solicitar el análisis al microservicio Python
+    const resultado = await solicitarAnalisisIA(solicitud.cvKey);
+
+    // Guardar el resultado y completar
+    const solicitudActualizada = await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+      estadoAnalisis: 'COMPLETADO',
+      resultadoIa: resultado
+    });
+
+    res.status(200).json(solicitudActualizada);
+  } catch (error) {
+    // Si falla, actualizar estado a ERROR para dar visibilidad
+    await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+      estadoAnalisis: 'ERROR'
+    });
+
+    logger.error({ err: error, solicitudId: solicitud._id }, 'Error en el proceso de análisis de IA');
+
+    // Si ya es un AppError, lo relanzamos para que llegue intacto al middleware de errores
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    const err = error as { message?: string };
+    // Lanzamos el error personalizado para que globalErrorHandler lo capture y envíe con el formato unificado
+    throw new AppError(
+      500,
+      'AI_ANALYSIS_FAILED',
+      `Fallo al procesar el currículum con Inteligencia Artificial: ${err.message || 'Error desconocido'}`
+    );
+  }
 });

@@ -5,7 +5,8 @@ import {
   createSolicitudSchema,
   solicitudIdParamsSchema,
   updateSolicitudSchema,
-  updateSolicitudStatusSchema
+  updateSolicitudStatusSchema,
+  guardarCvSchema
 } from '../validators/solicitudValidator.js';
 import {
   authenticateToken,
@@ -398,6 +399,123 @@ router.patch(
     body: updateSolicitudStatusSchema
   }),
   solicitudController.patchEstadoSolicitud
+);
+
+/**
+ * @openapi
+ * /api/solicitudes/{id}/guardar-cv:
+ *   patch:
+ *     summary: Guarda la clave S3 del CV tras la subida directa desde el cliente
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - cvKey
+ *             properties:
+ *               cvKey:
+ *                 type: string
+ *                 description: Clave del objeto en S3
+ *     responses:
+ *       200:
+ *         description: Solicitud actualizada con la clave del CV
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch(
+  '/:id/guardar-cv',
+  authenticateToken,
+  validate({
+    params: solicitudIdParamsSchema,
+    body: guardarCvSchema
+  }),
+  solicitudController.guardarCvKey
+);
+
+/**
+ * @openapi
+ * /api/solicitudes/{id}/ver-cv:
+ *   get:
+ *     summary: Genera un enlace temporal (2 min) de lectura del CV en S3
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: URL de lectura generada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 viewUrl:
+ *                   type: string
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get(
+  '/:id/ver-cv',
+  authenticateToken,
+  authorizeSolicitudParticipantOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.verCv
+);
+
+/**
+ * @openapi
+ * /api/solicitudes/{id}/analizar-cv:
+ *   post:
+ *     summary: Inicia el análisis del CV adjunto a la solicitud mediante Inteligencia Artificial
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Solicitud analizada con éxito
+ *       400:
+ *         description: Parámetros inválidos o la solicitud no contiene un currículum adjunto
+ *       403:
+ *         description: No autorizado para analizar el currículum de esta solicitud
+ *       404:
+ *         description: Solicitud no encontrada
+ *       429:
+ *         description: Límite de solicitudes de la IA excedido
+ *       503:
+ *         description: El servicio de análisis de IA no está disponible
+ */
+router.post(
+  '/:id/analizar-cv',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.analizarCvConIa
 );
 
 export default router;

@@ -50,3 +50,9 @@ export class InternalServerError extends AppError {
     super(500, 'INTERNAL_ERROR', message, undefined, false);
   }
 }
+
+export class AiError extends AppError {
+  constructor(message: string, errorCode: string = 'AI_SERVICE_ERROR', statusCode: number = 500) {
+    super(statusCode, errorCode, message);
+  }
+}

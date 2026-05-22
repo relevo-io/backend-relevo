@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { config } from '../config.js';
 import * as authService from '../services/authService.js';
 import { AuthRequest } from '../middlewares/auth.js';
-import { UsuarioModel } from '../models/usuarioModel.js';
+import * as usuarioService from '../services/usuarioService.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { UnauthorizedError, NotFoundError } from '../utils/AppError.js';
 
@@ -81,7 +81,7 @@ export const logout = asyncWrapper(async (req: Request, res: Response, _next: Ne
 });
 
 export const getMe = asyncWrapper(async (req: AuthRequest, res: Response) => {
-  const usuario = await UsuarioModel.findById(req.user?.id).select('-password');
+  const usuario = await usuarioService.obtenerUsuarioPorId(String(req.user?.id));
   if (!usuario) {
     throw new NotFoundError('Usuario no encontrado');
   }

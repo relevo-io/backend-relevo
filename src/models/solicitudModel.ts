@@ -1,6 +1,7 @@
 import { Schema, model, Types } from 'mongoose';
 
 export const accessRequestStatuses = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+export const analysisStatuses = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'ERROR'] as const;
 
 /**
  * @openapi
@@ -45,6 +46,14 @@ export const accessRequestStatuses = ['PENDING', 'ACCEPTED', 'REJECTED'] as cons
  *           type: string
  *           format: date-time
  */
+export interface IResultadoIa {
+  resumen: string;
+  nota: number;
+  comentarioNota: string;
+  puntosFuertes: string[];
+  experienciaDestacada: string[];
+}
+
 export interface ISolicitud {
   _id?: Types.ObjectId;
   owner: Types.ObjectId;
@@ -52,6 +61,9 @@ export interface ISolicitud {
   opportunity: Types.ObjectId;
   status: (typeof accessRequestStatuses)[number];
   message?: string;
+  cvKey?: string;
+  estadoAnalisis?: (typeof analysisStatuses)[number];
+  resultadoIa?: IResultadoIa;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -83,6 +95,29 @@ const solicitudSchema = new Schema<ISolicitud>(
       type: String,
       required: false,
       maxlength: 1000
+    },
+    cvKey: {
+      type: String,
+      required: false
+    },
+    estadoAnalisis: {
+      type: String,
+      enum: analysisStatuses,
+      default: 'PENDIENTE',
+      required: false
+    },
+    resultadoIa: {
+      type: new Schema(
+        {
+          resumen: { type: String, required: true },
+          nota: { type: Number, required: true, min: 1, max: 10 },
+          comentarioNota: { type: String, required: true },
+          puntosFuertes: { type: [String], required: true },
+          experienciaDestacada: { type: [String], required: true }
+        },
+        { _id: false }
+      ),
+      required: false
     }
   },
   {

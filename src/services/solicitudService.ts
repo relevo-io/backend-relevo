@@ -59,3 +59,19 @@ export const actualizarEstadoSolicitud = async (
 ): Promise<ISolicitud | null> => {
   return await SolicitudModel.findByIdAndUpdate(id, { status }, { new: true }).lean();
 };
+
+export const obtenerSolicitudConDetalles = async (id: string): Promise<ISolicitud | null> => {
+  return await SolicitudModel.findById(id).populate('opportunity').populate('interestedUser').lean();
+};
+
+export const eliminarSolicitudesPorIds = async (ids: string[]): Promise<number> => {
+  const result = await SolicitudModel.deleteMany({ _id: { $in: ids } });
+  return result.deletedCount ?? 0;
+};
+
+export const obtenerSolicitudPorOfertaYUsuario = async (
+  ofertaId: string,
+  userId: string
+): Promise<ISolicitud | null> => {
+  return await SolicitudModel.findOne({ opportunity: ofertaId, interestedUser: userId }).lean();
+};
