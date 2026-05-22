@@ -207,7 +207,7 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
     });
 
     res.status(200).json(solicitudActualizada);
-  } catch (error: any) {
+  } catch (error) {
     // Si falla, actualizar estado a ERROR para dar visibilidad
     await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
       estadoAnalisis: 'ERROR'
@@ -220,11 +220,12 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
       throw error;
     }
 
+    const err = error as { message?: string };
     // Lanzamos el error personalizado para que globalErrorHandler lo capture y envíe con el formato unificado
     throw new AppError(
       500,
       'AI_ANALYSIS_FAILED',
-      `Fallo al procesar el currículum con Inteligencia Artificial: ${error.message}`
+      `Fallo al procesar el currículum con Inteligencia Artificial: ${err.message || 'Error desconocido'}`
     );
   }
 });

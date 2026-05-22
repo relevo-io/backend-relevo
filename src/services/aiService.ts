@@ -48,12 +48,13 @@ export const solicitarAnalisisIA = async (cvKey: string): Promise<IResultadoIa> 
     }
 
     return (await response.json()) as IResultadoIa;
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof AiError) {
       throw error;
     }
+    const err = error as { code?: string; name?: string; message?: string };
     // Si el microservicio de Python está apagado / no contesta o hay error de red/fetch
-    if (error.code === 'ECONNREFUSED' || error.name === 'TypeError') {
+    if (err.code === 'ECONNREFUSED' || err.name === 'TypeError') {
       logger.error(error, 'El servicio de análisis de IA no está disponible');
       throw new AiError(
         'El servicio de análisis de IA no está disponible en este momento.',
@@ -62,6 +63,6 @@ export const solicitarAnalisisIA = async (cvKey: string): Promise<IResultadoIa> 
       );
     }
     logger.error(error, 'Error inesperado durante el análisis de IA');
-    throw new AiError(`Error inesperado en el análisis de IA: ${error.message || error}`, 'AI_ANALYSIS_FAILED', 500);
+    throw new AiError(`Error inesperado en el análisis de IA: ${err.message || error}`, 'AI_ANALYSIS_FAILED', 500);
   }
 };
