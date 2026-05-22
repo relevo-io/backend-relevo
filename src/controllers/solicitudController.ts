@@ -4,8 +4,10 @@ import * as solicitudService from '../services/solicitudService.js';
 import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError } from '../utils/AppError.js';
+import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError, AppError } from '../utils/AppError.js';
 import { generarPresignedGet } from '../services/storageService.js';
+import { solicitarAnalisisIA } from '../services/aiService.js';
+import { logger } from '../config.js';
 
 export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
   const solicitudes = await solicitudService.listarSolicitudes();
@@ -163,4 +165,66 @@ export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
 
   const viewUrl = await generarPresignedGet(solicitud.cvKey);
   res.status(200).json({ viewUrl });
+});
+
+/**
+ * POST /api/solicitudes/:id/analizar-cv
+ * Inicia el proceso de análisis del CV adjunto a la solicitud mediante Inteligencia Artificial.
+ * Restringido al propietario del negocio (owner) o un ADMIN.
+ */
+export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  const userRoles = req.user?.roles || [];
+  if (!userId) throw new UnauthorizedError('No autenticado');
+
+  const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
+  if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
+
+  // Seguridad: Solo el dueño de la oferta (owner) o el ADMIN pueden analizar el CV
+  const isOwner = String(solicitud.owner) === userId;
+  const isAdmin = userRoles.includes('ADMIN');
+  if (!isOwner && !isAdmin) {
+    throw new ForbiddenError('No autorizado para iniciar el análisis de esta solicitud');
+  }
+
+  if (!solicitud.cvKey) {
+    throw new ValidationError('Esta solicitud no contiene un currículum adjunto');
+  }
+
+  // Cambiar estado a EN_PROCESO temporalmente
+  await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+    estadoAnalisis: 'EN_PROCESO'
+  });
+
+  try {
+    // Solicitar el análisis al microservicio Python
+    const resultado = await solicitarAnalisisIA(solicitud.cvKey);
+
+    // Guardar el resultado y completar
+    const solicitudActualizada = await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+      estadoAnalisis: 'COMPLETADO',
+      resultadoIa: resultado
+    });
+
+    res.status(200).json(solicitudActualizada);
+  } catch (error: any) {
+    // Si falla, actualizar estado a ERROR para dar visibilidad
+    await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
+      estadoAnalisis: 'ERROR'
+    });
+
+    logger.error({ err: error, solicitudId: solicitud._id }, 'Error en el proceso de análisis de IA');
+
+    // Si ya es un AppError, lo relanzamos para que llegue intacto al middleware de errores
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    // Lanzamos el error personalizado para que globalErrorHandler lo capture y envíe con el formato unificado
+    throw new AppError(
+      500,
+      'AI_ANALYSIS_FAILED',
+      `Fallo al procesar el currículum con Inteligencia Artificial: ${error.message}`
+    );
+  }
 });

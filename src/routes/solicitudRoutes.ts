@@ -482,4 +482,40 @@ router.get(
   solicitudController.verCv
 );
 
+/**
+ * @openapi
+ * /api/solicitudes/{id}/analizar-cv:
+ *   post:
+ *     summary: Inicia el análisis del CV adjunto a la solicitud mediante Inteligencia Artificial
+ *     tags: [Solicitudes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Solicitud analizada con éxito
+ *       400:
+ *         description: Parámetros inválidos o la solicitud no contiene un currículum adjunto
+ *       403:
+ *         description: No autorizado para analizar el currículum de esta solicitud
+ *       404:
+ *         description: Solicitud no encontrada
+ *       429:
+ *         description: Límite de solicitudes de la IA excedido
+ *       503:
+ *         description: El servicio de análisis de IA no está disponible
+ */
+router.post(
+  '/:id/analizar-cv',
+  authenticateToken,
+  authorizeSolicitudOwnerOrAdmin,
+  validate({ params: solicitudIdParamsSchema }),
+  solicitudController.analizarCvConIa
+);
+
 export default router;

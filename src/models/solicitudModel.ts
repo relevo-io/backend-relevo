@@ -46,6 +46,14 @@ export const analysisStatuses = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'ERROR
  *           type: string
  *           format: date-time
  */
+export interface IResultadoIa {
+  resumen: string;
+  nota: number;
+  comentarioNota: string;
+  puntosFuertes: string[];
+  experienciaDestacada: string[];
+}
+
 export interface ISolicitud {
   _id?: Types.ObjectId;
   owner: Types.ObjectId;
@@ -55,7 +63,7 @@ export interface ISolicitud {
   message?: string;
   cvKey?: string;
   estadoAnalisis?: (typeof analysisStatuses)[number];
-  resultadoIa?: Record<string, unknown>;
+  resultadoIa?: IResultadoIa;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -95,10 +103,20 @@ const solicitudSchema = new Schema<ISolicitud>(
     estadoAnalisis: {
       type: String,
       enum: analysisStatuses,
+      default: 'PENDIENTE',
       required: false
     },
     resultadoIa: {
-      type: Schema.Types.Mixed,
+      type: new Schema(
+        {
+          resumen: { type: String, required: true },
+          nota: { type: Number, required: true, min: 1, max: 10 },
+          comentarioNota: { type: String, required: true },
+          puntosFuertes: { type: [String], required: true },
+          experienciaDestacada: { type: [String], required: true }
+        },
+        { _id: false }
+      ),
       required: false
     }
   },

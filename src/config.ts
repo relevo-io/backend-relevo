@@ -33,6 +33,10 @@ export const config = {
       sameSite: 'lax' as const,
       path: '/'
     }
+  },
+  pythonService: {
+    url: process.env.PYTHON_SERVICE_URL || 'http://localhost:8000',
+    apiKey: process.env.PYTHON_SERVICE_API_KEY || 'default_secret_key'
   }
 };
 
