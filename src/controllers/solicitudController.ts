@@ -7,7 +7,21 @@ import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError } from '../utils/AppError.js';
 import { generarPresignedGet } from '../services/storageService.js';
 
-export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
+const parsePagination = (page?: string, limit?: string) => {
+  if (!page && !limit) return null;
+  const parsedPage = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
+  const parsedLimit = Math.max(1, Number.parseInt(limit ?? '10', 10) || 10);
+  return { page: parsedPage, limit: parsedLimit };
+};
+
+export const getSolicitudes = asyncWrapper(async (req: Request, res: Response) => {
+  const pagination = parsePagination(req.query.page as string | undefined, req.query.limit as string | undefined);
+  if (pagination) {
+    const result = await solicitudService.listarSolicitudesPaginadas(pagination);
+    res.status(200).json(result);
+    return;
+  }
+
   const solicitudes = await solicitudService.listarSolicitudes();
   res.status(200).json(solicitudes);
 });
@@ -18,6 +32,13 @@ export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res:
     throw new UnauthorizedError('No autenticado');
   }
 
+  const pagination = parsePagination(req.query.page as string | undefined, req.query.limit as string | undefined);
+  if (pagination) {
+    const result = await solicitudService.obtenerSolicitudesPorPropietarioPaginadas(ownerId, pagination);
+    res.status(200).json(result);
+    return;
+  }
+
   const solicitudes = await solicitudService.obtenerSolicitudesPorPropietario(ownerId);
   res.status(200).json(solicitudes);
 });
@@ -26,6 +47,13 @@ export const getMisSolicitudesEnviadas = asyncWrapper(async (req: AuthRequest, r
   const userId = req.user?.id;
   if (!userId) {
     throw new UnauthorizedError('No autenticado');
+  }
+
+  const pagination = parsePagination(req.query.page as string | undefined, req.query.limit as string | undefined);
+  if (pagination) {
+    const result = await solicitudService.obtenerSolicitudesPorInteresadoPaginadas(userId, pagination);
+    res.status(200).json(result);
+    return;
   }
 
   const solicitudes = await solicitudService.obtenerSolicitudesPorInteresado(userId);

@@ -1,4 +1,5 @@
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
+import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 
 export const crearSolicitud = async (data: Partial<ISolicitud>): Promise<ISolicitud> => {
   const yaExiste = await SolicitudModel.findOne({
@@ -34,6 +35,40 @@ export const listarSolicitudes = async (): Promise<ISolicitud[]> => {
     .exec();
 };
 
+export const listarSolicitudesPaginadas = async (
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find()
+      .populate('interestedUser', 'fullName email')
+      .populate('opportunity', 'companyDescription')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments()
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
+};
+
 export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise<ISolicitud[]> => {
   return await SolicitudModel.find({ owner: ownerId })
     .populate('interestedUser', 'fullName email bio professionalBackground cv')
@@ -41,6 +76,42 @@ export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+};
+
+export const obtenerSolicitudesPorPropietarioPaginadas = async (
+  ownerId: string,
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+  const filter = { owner: ownerId };
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find(filter)
+      .populate('interestedUser', 'fullName email bio professionalBackground cv')
+      .populate('opportunity', 'companyDescription sector region')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
 };
 
 export const obtenerSolicitudesPorInteresado = async (userId: string): Promise<ISolicitud[]> => {
@@ -51,6 +122,43 @@ export const obtenerSolicitudesPorInteresado = async (userId: string): Promise<I
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+};
+
+export const obtenerSolicitudesPorInteresadoPaginadas = async (
+  userId: string,
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+  const filter = { interestedUser: userId };
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find(filter)
+      .populate('interestedUser', 'fullName email')
+      .populate('owner', 'fullName email')
+      .populate('opportunity', 'companyDescription sector region')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
 };
 
 export const actualizarEstadoSolicitud = async (
