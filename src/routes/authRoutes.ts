@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, logout, refreshToken, getMe } from '../controllers/authController.js';
+import { login, logout, refreshToken, getMe, firebaseLogin } from '../controllers/authController.js';
 import { z } from 'zod';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import { authenticateToken } from '../middlewares/auth.js';
@@ -9,6 +9,9 @@ const router = express.Router();
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1)
+});
+const firebaseLoginSchema = z.object({
+  idToken: z.string().min(1)
 });
 
 /**
@@ -42,6 +45,7 @@ const loginSchema = z.object({
  *         description: Credenciales incorrectas
  */
 router.post('/login', validate({ body: loginSchema }), login);
+router.post('/firebase', validate({ body: firebaseLoginSchema }), firebaseLogin);
 
 /**
  * @openapi

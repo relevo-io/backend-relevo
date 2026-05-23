@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userRoles } from '../models/usuarioModel.js';
+import { authProviders, userRoles } from '../models/usuarioModel.js';
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
 const objectIdSchema = z.string().regex(objectIdRegex, 'El id debe tener formato ObjectId valido');
@@ -29,7 +29,9 @@ const usuarioBaseSchema = z.object({
   roles: rolesSchema,
   fullName: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(120),
   email: z.string().trim().email('Email invalido'),
-  password: z.string().min(6, 'La contrasena debe tener al menos 6 caracteres'),
+  password: z.string().min(6, 'La contrasena debe tener al menos 6 caracteres').nullable().optional(),
+  authProvider: z.enum(authProviders).default('local'),
+  providerId: z.string().trim().min(1).nullable().optional(),
   location: z.string().trim().max(120).optional(),
   bio: z.string().max(500).optional(),
   professionalBackground: z.string().max(2000).optional(),
@@ -40,7 +42,22 @@ const usuarioBaseSchema = z.object({
   theme: z.enum(['light', 'dark']).optional()
 });
 
-export const createUsuarioSchema = usuarioBaseSchema.strict();
+const withConditionalPassword = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.superRefine((data: z.infer<T>, ctx) => {
+    const typedData = data as { authProvider?: 'local' | 'google' | 'github'; password?: string | null };
+    const provider = typedData.authProvider ?? 'local';
+    const password = typedData.password;
+
+    if (provider === 'local' && (!password || password.length < 6)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['password'],
+        message: 'Password obligatorio para cuentas locales'
+      });
+    }
+  });
+
+export const createUsuarioSchema = withConditionalPassword(usuarioBaseSchema.strict());
 
 const publicRolesSchema = z
   .array(z.enum(['OWNER', 'INTERESTED']))
@@ -50,7 +67,9 @@ const publicRolesSchema = z
     message: 'No se permiten roles duplicados'
   });
 
-export const createUsuarioPublicSchema = usuarioBaseSchema.extend({ roles: publicRolesSchema }).strict();
+export const createUsuarioPublicSchema = withConditionalPassword(
+  usuarioBaseSchema.extend({ roles: publicRolesSchema }).strict()
+);
 
 export const updateUsuarioSchema = usuarioBaseSchema
   .partial()

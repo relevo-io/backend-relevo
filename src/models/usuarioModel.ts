@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
 
 export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
+export const authProviders = ['local', 'google', 'github'] as const;
 
 const SALT_ROUNDS = config.bcryptSaltRounds;
 
@@ -97,7 +98,10 @@ export interface IUsuario {
   roles: Array<(typeof userRoles)[number]>;
   fullName: string;
   email: string;
-  password: string;
+  password?: string | null;
+  authProvider?: (typeof authProviders)[number];
+  providerId?: string | null;
+  favoriteOfferIds?: Types.ObjectId[];
   location?: string;
   bio?: string;
   professionalBackground?: string;
@@ -143,8 +147,23 @@ const usuarioSchema = new Schema<IUsuario>(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: 6
+    },
+    authProvider: {
+      type: String,
+      enum: authProviders,
+      default: 'local',
+      required: true
+    },
+    providerId: {
+      type: String,
+      default: null,
+      sparse: true
+    },
+    favoriteOfferIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Oferta' }],
+      default: []
     },
     location: {
       type: String,
@@ -196,7 +215,20 @@ const usuarioSchema = new Schema<IUsuario>(
 );
 
 usuarioSchema.pre('save', async function () {
+  if (this.authProvider === 'local' && !this.password) {
+    throw new Error('El password es obligatorio para cuentas locales');
+  }
+
+  if (this.authProvider !== 'local' && !this.password) {
+    this.password = null;
+    return;
+  }
+
   if (!this.isModified('password')) {
+    return;
+  }
+
+  if (!this.password) {
     return;
   }
 
@@ -229,5 +261,10 @@ usuarioSchema.pre('findOneAndUpdate', async function () {
 
   typedUpdate.password = hashedPassword;
 });
+
+usuarioSchema.index(
+  { authProvider: 1, providerId: 1 },
+  { unique: true, partialFilterExpression: { providerId: { $type: 'string' } } }
+);
 
 export const UsuarioModel = model<IUsuario>('Usuario', usuarioSchema);

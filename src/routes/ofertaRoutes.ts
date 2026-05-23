@@ -119,6 +119,19 @@ router.get('/', validate({ query: ofertaQuerySchema }), ofertaController.getOfer
  *         description: Llista d'ofertes pròpies recuperada correctament
  */
 router.get('/me', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), ofertaController.getMisOfertas);
+router.get('/favorites', authenticateToken, ofertaController.getMisFavoritas);
+router.post(
+  '/:id/favorite',
+  authenticateToken,
+  validate({ params: ofertaIdParamsSchema }),
+  ofertaController.addOfertaFavorita
+);
+router.delete(
+  '/:id/favorite',
+  authenticateToken,
+  validate({ params: ofertaIdParamsSchema }),
+  ofertaController.removeOfertaFavorita
+);
 
 /**
  * @openapi
