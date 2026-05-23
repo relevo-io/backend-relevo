@@ -8,7 +8,7 @@ import { asyncWrapper } from '../utils/asyncWrapper.js';
 //  POST /api/chats
 //  Crea o recupera un chat existente para (oferta + interesado)
 // ─────────────────────────────────────────────
-export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const callerId = req.user!.id;
   const { ofertaId, interestedId } = req.body;
 
@@ -51,7 +51,7 @@ export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Respon
 //  GET /api/chats
 //  Mis chats activos (como owner o como interested)
 // ─────────────────────────────────────────────
-export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
 
   const chats = await chatService.obtenerChatsPorUsuario(userId);
@@ -64,7 +64,7 @@ export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response) =
 //  Historial con paginación por cursor temporal
 //  Query params: ?limit=30&before=<ISO_date>
 // ─────────────────────────────────────────────
-export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const { chatId } = req.params;
   const limit = Math.min(parseInt(req.query['limit'] as string) || 30, 100);
   const before = req.query['before'] as string | undefined;
@@ -79,7 +79,7 @@ export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Respon
 //  PATCH /api/chats/:chatId/read
 //  Marca los mensajes como leídos (reset unread counter)
 // ─────────────────────────────────────────────
-export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
 
@@ -106,7 +106,7 @@ export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Respons
 //  Marca un chat como solo lectura (llamado cuando se borra una oferta)
 //  Solo el owner o admin puede hacerlo
 // ─────────────────────────────────────────────
-export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
 
@@ -130,7 +130,7 @@ export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Respon
 //  PATCH /api/chats/:chatId/status
 //  Permite al receptor (owner) aceptar o rechazar un chat pendiente
 // ─────────────────────────────────────────────
-export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
   const { status } = req.body;

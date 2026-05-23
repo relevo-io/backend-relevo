@@ -7,7 +7,7 @@ import { generarPresignedPut } from '../services/storageService.js';
  * GET /api/storage/presigned-url
  * Genera una Pre-signed URL de tipo PUT para subir un archivo (CV) a S3.
  */
-export const getPresignedUrl = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getPresignedUrl = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   // El validador ya asegura que req.query.filename sea un string válido
   const { filename } = req.query as { filename: string };
 

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { UsuarioModel, IUsuario } from '../models/usuarioModel.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 
-export const validateUserCredentials = async (email: string, password: string) => {
+export const validateUserCredentials = async (email: string, password: string): Promise<IUsuario | null> => {
   const usuario = await UsuarioModel.findOne({ email: email.toLowerCase().trim() });
   if (!usuario) return null;
 
@@ -12,7 +12,7 @@ export const validateUserCredentials = async (email: string, password: string) =
   return usuario;
 };
 
-export const getTokens = (usuario: IUsuario) => {
+export const getTokens = (usuario: IUsuario): { accessToken: string; refreshToken: string } => {
   const roles = (usuario.roles ?? []) as Array<'OWNER' | 'INTERESTED' | 'ADMIN'>;
 
   const accessToken = generateAccessToken(String(usuario._id), usuario.fullName, usuario.email, roles);
@@ -21,7 +21,9 @@ export const getTokens = (usuario: IUsuario) => {
   return { accessToken, refreshToken };
 };
 
-export const refreshUserSession = async (incomingRefreshToken: string) => {
+export const refreshUserSession = async (
+  incomingRefreshToken: string
+): Promise<{ accessToken: string; refreshToken: string; usuario: IUsuario }> => {
   const payload = verifyRefreshToken(incomingRefreshToken);
   const usuario = await UsuarioModel.findById(payload.id);
 

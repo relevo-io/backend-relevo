@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { ISolicitud } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
 import * as ofertaService from '../services/ofertaService.js';
@@ -9,12 +10,12 @@ import { generarPresignedGet } from '../services/storageService.js';
 import { solicitarAnalisisIA } from '../services/aiService.js';
 import { logger } from '../config.js';
 
-export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response) => {
+export const getSolicitudes = asyncWrapper(async (_req: Request, res: Response): Promise<void> => {
   const solicitudes = await solicitudService.listarSolicitudes();
   res.status(200).json(solicitudes);
 });
 
-export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const ownerId = req.user?.id;
   if (!ownerId) {
     throw new UnauthorizedError('No autenticado');
@@ -24,7 +25,7 @@ export const getMisSolicitudesOwner = asyncWrapper(async (req: AuthRequest, res:
   res.status(200).json(solicitudes);
 });
 
-export const getMisSolicitudesEnviadas = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMisSolicitudesEnviadas = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) {
     throw new UnauthorizedError('No autenticado');
@@ -34,7 +35,7 @@ export const getMisSolicitudesEnviadas = asyncWrapper(async (req: AuthRequest, r
   res.status(200).json(solicitudes);
 });
 
-export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const solicitud = await solicitudService.obtenerSolicitudPorId(req.params.id);
   if (!solicitud) {
     throw new NotFoundError('Solicitud no encontrada');
@@ -43,7 +44,7 @@ export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, re
   res.status(200).json(solicitud);
 });
 
-export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const { opportunityId, message } = req.body;
   const interestedUserId = req.user?.id;
 
@@ -57,11 +58,9 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
   }
 
   const nueva = await solicitudService.crearSolicitud({
-    opportunity: opportunityId,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    interestedUser: interestedUserId as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    owner: oferta.owner as any,
+    opportunity: new Types.ObjectId(opportunityId),
+    interestedUser: new Types.ObjectId(interestedUserId),
+    owner: oferta.owner,
     message
   });
 
@@ -71,7 +70,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
 });
 
 export const updateSolicitud = asyncWrapper(
-  async (req: Request<{ id: string }, {}, Partial<ISolicitud>>, res: Response) => {
+  async (req: Request<{ id: string }, {}, Partial<ISolicitud>>, res: Response): Promise<void> => {
     const solicitudActualizada = await solicitudService.actualizarSolicitud(req.params.id, req.body);
     if (!solicitudActualizada) {
       throw new NotFoundError('Solicitud no encontrada');
@@ -81,7 +80,7 @@ export const updateSolicitud = asyncWrapper(
   }
 );
 
-export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response) => {
+export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const eliminada = await solicitudService.eliminarSolicitud(req.params.id);
   if (!eliminada) {
     throw new NotFoundError('Solicitud no encontrada');
@@ -91,7 +90,7 @@ export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>,
 });
 
 export const patchEstadoSolicitud = asyncWrapper(
-  async (req: Request<{ id: string }, {}, Pick<ISolicitud, 'status'>>, res: Response) => {
+  async (req: Request<{ id: string }, {}, Pick<ISolicitud, 'status'>>, res: Response): Promise<void> => {
     const solicitudActualizada = await solicitudService.actualizarEstadoSolicitud(req.params.id, req.body.status);
     if (!solicitudActualizada) {
       throw new NotFoundError('Solicitud no encontrada');
@@ -101,7 +100,7 @@ export const patchEstadoSolicitud = asyncWrapper(
   }
 );
 
-export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) => {
+export const deleteMultiple = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
   const { ids } = req.body;
 
   if (!ids || !Array.isArray(ids)) {
@@ -113,7 +112,7 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response) =
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
 });
 
-export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
   const { ofertaId } = req.params;
 
@@ -131,7 +130,7 @@ export const getMiSolicitudPorOferta = asyncWrapper(async (req: AuthRequest, res
  * Saves the S3 key of the CV after the client has uploaded it directly to S3.
  * Only the interestedUser (candidate) of this solicitud can call this endpoint.
  */
-export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) throw new UnauthorizedError('No autenticado');
 
@@ -155,7 +154,7 @@ export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response)
  * Generates a 2-minute pre-signed GET URL for the CV stored in S3.
  * Accessible by the candidate (interestedUser) or the recruiter (owner).
  */
-export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const verCv = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const solicitud = await solicitudService.obtenerSolicitudPorId(req.params['id']);
   if (!solicitud) throw new NotFoundError('Solicitud no encontrada');
 
@@ -172,7 +171,7 @@ export const verCv = asyncWrapper(async (req: AuthRequest, res: Response) => {
  * Inicia el proceso de análisis del CV adjunto a la solicitud mediante Inteligencia Artificial.
  * Restringido al propietario del negocio (owner) o un ADMIN.
  */
-export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
   const userRoles = req.user?.roles || [];
   if (!userId) throw new UnauthorizedError('No autenticado');

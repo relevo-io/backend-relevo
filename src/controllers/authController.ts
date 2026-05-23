@@ -6,7 +6,7 @@ import * as usuarioService from '../services/usuarioService.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { UnauthorizedError, NotFoundError } from '../utils/AppError.js';
 
-export const login = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const login = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   const { email, password } = req.body;
 
   const usuario = await authService.validateUserCredentials(email, password);
@@ -36,7 +36,7 @@ export const login = asyncWrapper(async (req: Request, res: Response, _next: Nex
   });
 });
 
-export const refreshToken = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const refreshToken = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   const incomingRefreshToken = req.cookies?.[config.cookies.refreshName] || req.body?.refreshToken;
 
   if (!incomingRefreshToken) {
@@ -72,7 +72,7 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, _ne
   }
 });
 
-export const logout = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const logout = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   res.clearCookie(config.cookies.refreshName, {
     ...config.cookies.options
   });
@@ -80,7 +80,7 @@ export const logout = asyncWrapper(async (req: Request, res: Response, _next: Ne
   res.status(200).json({ message: 'Logout exitoso' });
 });
 
-export const getMe = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMe = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const usuario = await usuarioService.obtenerUsuarioPorId(String(req.user?.id));
   if (!usuario) {
     throw new NotFoundError('Usuario no encontrado');

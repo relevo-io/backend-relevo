@@ -1,4 +1,4 @@
-import { Schema, model, Types } from 'mongoose';
+import mongoose, { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 import { config } from '../config.js';
@@ -195,7 +195,7 @@ const usuarioSchema = new Schema<IUsuario>(
   }
 );
 
-usuarioSchema.pre('save', async function () {
+usuarioSchema.pre('save', async function (this: mongoose.Document & IUsuario): Promise<void> {
   if (!this.isModified('password')) {
     return;
   }
@@ -203,7 +203,7 @@ usuarioSchema.pre('save', async function () {
   this.password = await hashPassword(this.password);
 });
 
-usuarioSchema.pre('findOneAndUpdate', async function () {
+usuarioSchema.pre('findOneAndUpdate', async function (this: mongoose.Query<unknown, IUsuario>): Promise<void> {
   const update = this.getUpdate();
   if (!update || Array.isArray(update)) {
     return;

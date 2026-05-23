@@ -7,7 +7,7 @@ export const generateAccessToken = (
   fullName: string,
   email: string,
   roles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>
-) => {
+): string => {
   const payload: IJwtPayload = { id: userId, fullName, email, roles };
   return jwt.sign(payload, config.jwt.accessSecret, {
     expiresIn: config.jwt.accessExpiresIn as jwt.SignOptions['expiresIn']
@@ -19,17 +19,17 @@ export const generateRefreshToken = (
   fullName: string,
   email: string,
   roles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>
-) => {
+): string => {
   const payload: IJwtPayload = { id: userId, fullName, email, roles };
   return jwt.sign(payload, config.jwt.refreshSecret, {
     expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn']
   });
 };
 
-export const verifyAccessToken = (token: string) => {
+export const verifyAccessToken = (token: string): IJwtPayload => {
   return jwt.verify(token, config.jwt.accessSecret) as IJwtPayload;
 };
 
-export const verifyRefreshToken = (token: string) => {
+export const verifyRefreshToken = (token: string): IJwtPayload => {
   return jwt.verify(token, config.jwt.refreshSecret) as IJwtPayload;
 };

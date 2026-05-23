@@ -15,7 +15,7 @@ const hasRole = (req: AuthRequest, role: 'OWNER' | 'INTERESTED' | 'ADMIN'): bool
   return !!req.user?.roles?.includes(role);
 };
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
 
   const token = authHeader && authHeader.split(' ')[1];
@@ -37,8 +37,10 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
-export const authorizeRoles = (...allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeRoles = (
+  ...allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>
+): ((req: AuthRequest, res: Response, next: NextFunction) => void) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
     }
@@ -52,8 +54,10 @@ export const authorizeRoles = (...allowedRoles: Array<'OWNER' | 'INTERESTED' | '
   };
 };
 
-export const authorizeSelfOrAdmin = (paramName: string = 'id') => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeSelfOrAdmin = (
+  paramName: string = 'id'
+): ((req: AuthRequest, res: Response, next: NextFunction) => void) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
     }
@@ -69,7 +73,11 @@ export const authorizeSelfOrAdmin = (paramName: string = 'id') => {
   };
 };
 
-export const authorizeOfertaOwnerOrAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeOfertaOwnerOrAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
@@ -94,7 +102,11 @@ export const authorizeOfertaOwnerOrAdmin = async (req: AuthRequest, res: Respons
   }
 };
 
-export const authorizeSolicitudOwnerOrAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeSolicitudOwnerOrAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
@@ -119,7 +131,11 @@ export const authorizeSolicitudOwnerOrAdmin = async (req: AuthRequest, res: Resp
   }
 };
 
-export const authorizeSolicitudParticipantOrAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeSolicitudParticipantOrAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));
@@ -147,7 +163,7 @@ export const authorizeSolicitudParticipantOrAdmin = async (req: AuthRequest, res
   }
 };
 
-export const authorizeChatParticipant = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authorizeChatParticipant = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.user) {
       return next(new UnauthorizedError('No autenticado'));

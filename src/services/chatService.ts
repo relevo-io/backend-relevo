@@ -1,4 +1,5 @@
-import { ChatModel, IChat } from '../models/chatModel.js';
+import mongoose, { Types } from 'mongoose';
+import { ChatModel, IChat, ChatStatus } from '../models/chatModel.js';
 import { MensajeModel, IMensaje } from '../models/mensajeModel.js';
 import { OfertaModel } from '../models/ofertaModel.js';
 import { SolicitudModel } from '../models/solicitudModel.js';
@@ -23,12 +24,21 @@ export const crearOObtenerChat = async (
   interestedId: string,
   solicitudAceptada: boolean
 ): Promise<IChat> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const update: any = {
+  const update: mongoose.UpdateQuery<IChat> & {
     $setOnInsert: {
-      oferta: ofertaId,
-      owner: ownerId,
-      interested: interestedId,
+      oferta: Types.ObjectId;
+      owner: Types.ObjectId;
+      interested: Types.ObjectId;
+      unreadOwner: number;
+      unreadInterested: number;
+      isReadOnly: boolean;
+      status?: ChatStatus;
+    };
+  } = {
+    $setOnInsert: {
+      oferta: new Types.ObjectId(ofertaId),
+      owner: new Types.ObjectId(ownerId),
+      interested: new Types.ObjectId(interestedId),
       unreadOwner: 0,
       unreadInterested: 0,
       isReadOnly: false
