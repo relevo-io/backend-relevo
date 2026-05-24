@@ -175,8 +175,59 @@ export async function seedingDatabase(): Promise<void> {
       }
     ];
 
-    await OfertaModel.insertMany(ofertasData);
-    logger.info('Database ready: %d professional offers created.', ofertasData.length);
+    const dynamicRegions = ['Barcelona', 'Madrid', 'Valencia', 'Sevilla', 'Bilbao', 'Malaga', 'Zaragoza', 'Alicante'];
+    const dynamicSectors = [
+      'Technology',
+      'Healthcare',
+      'Hospitality',
+      'Retail',
+      'Manufacturing',
+      'Logistics',
+      'Education',
+      'Services'
+    ];
+    const dynamicRevenues: IOferta['revenueRange'][] = [
+      'UNDER_100K',
+      'BETWEEN_100K_500K',
+      'BETWEEN_500K_1M',
+      'BETWEEN_1M_5M',
+      'OVER_5M'
+    ];
+    const dynamicEmployees: IOferta['employeeRange'][] = ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS'];
+    const ownersPool = createdUsers.filter((u) => u.roles.includes('OWNER'));
+
+    const EXTRA_OFFERS_COUNT = 200;
+    const generatedOffers: IOferta[] = Array.from({ length: EXTRA_OFFERS_COUNT }, (_, index) => {
+      const owner = ownersPool[index % ownersPool.length]!;
+      const sector = dynamicSectors[index % dynamicSectors.length]!;
+      const region = dynamicRegions[index % dynamicRegions.length]!;
+      const revenueRange = dynamicRevenues[index % dynamicRevenues.length];
+      const employeeRange = dynamicEmployees[index % dynamicEmployees.length];
+      const creationYear = 1998 + (index % 27);
+      const offerNumber = index + 1;
+
+      return {
+        region,
+        sector,
+        revenueRange,
+        owner: owner._id as mongoose.Types.ObjectId,
+        creationYear,
+        employeeRange,
+        companyDescription: `${sector} business opportunity #${offerNumber} in ${region}.`,
+        extendedDescription:
+          `Seeded offer ${offerNumber} for pagination testing. ` +
+          `Includes stable operations, recurring revenue, and transition support.`
+      };
+    });
+
+    const allOffers = [...ofertasData, ...generatedOffers];
+    await OfertaModel.insertMany(allOffers);
+    logger.info(
+      'Database ready: %d professional offers created (%d base + %d generated).',
+      allOffers.length,
+      ofertasData.length,
+      generatedOffers.length
+    );
   } catch (err) {
     logger.error(err, 'Seeding failed');
     throw err;

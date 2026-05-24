@@ -63,16 +63,22 @@ export const loginWithFirebaseToken = async (idToken: string) => {
     usuario = await UsuarioModel.create({
       fullName,
       email,
-      roles: ['INTERESTED'],
+      roles: ['OWNER', 'INTERESTED'],
       authProvider,
       providerId,
       password: null
     });
   } else {
-    const requiresUpdate = usuario.authProvider !== authProvider || usuario.providerId !== providerId;
+    const hasOwnerRole = usuario.roles?.includes('OWNER') ?? false;
+    const hasInterestedRole = usuario.roles?.includes('INTERESTED') ?? false;
+    const needsRoleBackfill = !hasOwnerRole || !hasInterestedRole;
+    const requiresUpdate =
+      usuario.authProvider !== authProvider || usuario.providerId !== providerId || needsRoleBackfill;
+
     if (requiresUpdate) {
       usuario.authProvider = authProvider;
       usuario.providerId = providerId;
+      usuario.roles = ['OWNER', 'INTERESTED'];
       usuario.password = usuario.password ?? null;
       await usuario.save();
     }

@@ -7,10 +7,31 @@ import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotFoundError, UnauthorizedError } from '../utils/AppError.js';
 import { logger } from '../config.js';
 
+const parsePagination = (page?: string, limit?: string) => {
+  if (!page && !limit) return null;
+  const parsedPage = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
+  const parsedLimit = Math.max(1, Number.parseInt(limit ?? '12', 10) || 12);
+  return { page: parsedPage, limit: parsedLimit };
+};
+
 export const getOfertas = asyncWrapper(
-  async (req: Request<{}, {}, {}, { excludeOwnerId?: string }>, res: Response): Promise<void> => {
+  async (
+    req: Request<{}, {}, {}, { excludeOwnerId?: string; search?: string; page?: string; limit?: string }>,
+    res: Response
+  ): Promise<void> => {
+    const pagination = parsePagination(req.query.page, req.query.limit);
+    if (pagination) {
+      const result = await ofertaService.listarOfertasPaginadas(pagination, {
+        excludeOwnerId: req.query.excludeOwnerId,
+        search: req.query.search
+      });
+      res.status(200).json(result);
+      return;
+    }
+
     const ofertas = await ofertaService.listarOfertas({
-      excludeOwnerId: req.query.excludeOwnerId
+      excludeOwnerId: req.query.excludeOwnerId,
+      search: req.query.search
     });
     res.status(200).json(ofertas);
   }
@@ -81,6 +102,16 @@ export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response
     throw new UnauthorizedError('No autenticado');
   }
 
+  const page = req.query.page as string | undefined;
+  const limit = req.query.limit as string | undefined;
+  const pagination = parsePagination(page, limit);
+
+  if (pagination) {
+    const result = await ofertaService.obtenerOfertasPorOwnerPaginadas(userId, pagination);
+    res.status(200).json(result);
+    return;
+  }
+
   const ofertas = await ofertaService.obtenerOfertasPorOwner(userId);
   res.status(200).json(ofertas);
 });
@@ -89,6 +120,16 @@ export const getMisFavoritas = asyncWrapper(async (req: AuthRequest, res: Respon
   const userId = req.user?.id;
   if (!userId) {
     throw new UnauthorizedError('No autenticado');
+  }
+
+  const page = req.query.page as string | undefined;
+  const limit = req.query.limit as string | undefined;
+  const pagination = parsePagination(page, limit);
+
+  if (pagination) {
+    const result = await ofertaService.obtenerOfertasFavoritasPaginadas(userId, pagination);
+    res.status(200).json(result);
+    return;
   }
 
   const ofertas = await ofertaService.obtenerOfertasFavoritas(userId);
