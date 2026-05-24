@@ -87,3 +87,32 @@ export const getMe = asyncWrapper(async (req: AuthRequest, res: Response): Promi
   }
   res.status(200).json(usuario);
 });
+
+export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) => {
+  const { idToken } = req.body as { idToken?: string };
+
+  if (!idToken) {
+    throw new UnauthorizedError('idToken requerido');
+  }
+
+  const { accessToken, refreshToken, usuario } = await authService.loginWithFirebaseToken(idToken);
+
+  res.cookie(config.cookies.refreshName, refreshToken, {
+    ...config.cookies.options,
+    maxAge: config.cookies.maxAge
+  });
+
+  res.status(200).json({
+    message: 'Login Firebase exitoso',
+    accessToken,
+    usuario: {
+      _id: usuario._id,
+      fullName: usuario.fullName,
+      email: usuario.email,
+      roles: usuario.roles,
+      language: usuario.language,
+      theme: usuario.theme,
+      authProvider: usuario.authProvider
+    }
+  });
+});

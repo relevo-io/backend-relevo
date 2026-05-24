@@ -11,6 +11,29 @@ export async function setupDatabase(): Promise<void> {
     }
     mongoose.set('strictQuery', true);
     await mongoose.connect(config.mongoUri);
+    try {
+      const indexes = await UsuarioModel.collection.indexes();
+      const providerIndex = indexes.find((index) => index.name === 'authProvider_1_providerId_1');
+      const partialFilter = providerIndex?.partialFilterExpression as
+        | { providerId?: { $exists?: boolean; $type?: string } }
+        | undefined;
+
+      if (partialFilter?.providerId?.$exists === true) {
+        await UsuarioModel.collection.dropIndex('authProvider_1_providerId_1');
+        logger.info('Dropped outdated usuario OAuth provider index');
+      }
+    } catch (err) {
+      const mongoError = err as { codeName?: string; code?: number };
+      if (
+        mongoError.codeName !== 'IndexNotFound' &&
+        mongoError.code !== 27 &&
+        mongoError.codeName !== 'NamespaceNotFound' &&
+        mongoError.code !== 26
+      ) {
+        throw err;
+      }
+    }
+    await UsuarioModel.syncIndexes();
     logger.info('Connected to MongoDB');
   } catch (err) {
     logger.error(err, 'Database connection failed');

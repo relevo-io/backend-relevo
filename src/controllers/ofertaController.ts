@@ -84,3 +84,38 @@ export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response
   const ofertas = await ofertaService.obtenerOfertasPorOwner(userId);
   res.status(200).json(ofertas);
 });
+
+export const getMisFavoritas = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const ofertas = await ofertaService.obtenerOfertasFavoritas(userId);
+  res.status(200).json(ofertas);
+});
+
+export const addOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const oferta = await ofertaService.obtenerOfertaPorId(req.params.id);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  await ofertaService.agregarOfertaAFavoritos(userId, req.params.id);
+  res.status(200).json({ message: 'Oferta agregada a favoritos' });
+});
+
+export const removeOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  await ofertaService.quitarOfertaDeFavoritos(userId, req.params.id);
+  res.status(200).json({ message: 'Oferta eliminada de favoritos' });
+});

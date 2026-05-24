@@ -37,6 +37,11 @@ export const config = {
   pythonService: {
     url: process.env.PYTHON_SERVICE_URL || 'http://localhost:8000',
     apiKey: process.env.PYTHON_SERVICE_API_KEY || 'default_secret_key'
+  },
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID || '',
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
+    privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
   }
 };
 
