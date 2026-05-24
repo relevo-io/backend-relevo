@@ -1,33 +1,30 @@
 import mongoose from 'mongoose';
 import { beforeAll, afterAll, beforeEach } from 'vitest';
-import { UsuarioModel } from '../src/models/usuarioModel.js';
+import { UsuarioModel, IUsuario } from '../src/models/usuarioModel.js';
 
-// Use a separate database for testing
-const TEST_MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ea-exercise-mongoose-test';
+const TEST_MONGO_URI = 'mongodb://127.0.0.1:27017/ea-exercise-mongoose-test';
 
-export const TEST_ADMIN = {
+export const TEST_ADMIN: IUsuario = {
   fullName: 'Test Admin',
   email: 'admin@test.com',
   password: 'password123',
   roles: ['ADMIN'],
   location: 'Barcelona',
   language: 'es',
-  visible: true,
-  extendedDescription: 'Admin user for testing'
+  visible: true
 };
 
-export const TEST_USER = {
+export const TEST_USER: IUsuario = {
   fullName: 'Test User',
   email: 'user@test.com',
   password: 'password123',
   roles: ['INTERESTED'],
   location: 'Barcelona',
   language: 'es',
-  visible: true,
-  extendedDescription: 'Regular user for testing'
+  visible: true
 };
 
-export const TEST_OWNER = {
+export const TEST_OWNER: IUsuario = {
   fullName: 'Test Owner',
   email: 'owner@test.com',
   password: 'password123',
