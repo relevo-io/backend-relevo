@@ -4,7 +4,7 @@ import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const buildOfertaFilter = (options?: { excludeOwnerId?: string; search?: string }) => {
+const buildOfertaFilter = async (options?: { excludeOwnerId?: string; search?: string }) => {
   const filter: Record<string, unknown> = {};
   if (options?.excludeOwnerId) {
     filter.owner = { $ne: options.excludeOwnerId };
@@ -13,12 +13,15 @@ const buildOfertaFilter = (options?: { excludeOwnerId?: string; search?: string 
   const search = options?.search?.trim();
   if (search) {
     const regex = new RegExp(escapeRegex(search), 'i');
+    const usuariosCoincidentes = await UsuarioModel.find({ fullName: regex }).select('_id').lean();
+    const idsUsuarios = usuariosCoincidentes.map((u: any) => u._id);
     filter.$or = [
       { sector: regex },
       { region: regex },
       { companyDescription: regex },
       { revenueRange: regex },
-      { employeeRange: regex }
+      { employeeRange: regex },
+      { owner: { $in: idsUsuarios } }
     ];
   }
 
@@ -30,7 +33,7 @@ export const crearOferta = async (data: Partial<IOferta>): Promise<IOferta> => {
 };
 
 export const obtenerOfertaPorId = async (id: string): Promise<IOferta | null> => {
-  return await OfertaModel.findById(id).lean();
+  return (await OfertaModel.findById(id).populate('owner', 'fullName email').lean()) as IOferta | null;
 };
 
 export const actualizarOferta = async (id: string, data: Partial<IOferta>): Promise<IOferta | null> => {
@@ -42,7 +45,7 @@ export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
 };
 
 export const listarOfertas = async (options?: { excludeOwnerId?: string; search?: string }): Promise<IOferta[]> => {
-  const filter = buildOfertaFilter(options);
+  const filter = await buildOfertaFilter(options);
   return await OfertaModel.find(filter).lean();
 };
 
@@ -50,13 +53,18 @@ export const listarOfertasPaginadas = async (
   pagination: PaginationParams,
   options?: { excludeOwnerId?: string; search?: string }
 ): Promise<PaginatedResult<IOferta>> => {
-  const filter = buildOfertaFilter(options);
+  const filter = await buildOfertaFilter(options);
   const page = Math.max(1, pagination.page);
   const limit = Math.max(1, pagination.limit);
   const skip = (page - 1) * limit;
 
   const [items, totalItems] = await Promise.all([
-    OfertaModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    OfertaModel.find(filter)
+      .populate('owner', 'fullName email') // Añadido el populate aquí
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean() as Promise<IOferta[]>,
     OfertaModel.countDocuments(filter)
   ]);
 
