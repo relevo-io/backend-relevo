@@ -1,5 +1,5 @@
 import { IOferta, OfertaModel } from '../models/ofertaModel.js';
-import { UsuarioModel } from '../models/usuarioModel.js';
+import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
 import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -14,7 +14,7 @@ const buildOfertaFilter = async (options?: { excludeOwnerId?: string; search?: s
   if (search) {
     const regex = new RegExp(escapeRegex(search), 'i');
     const usuariosCoincidentes = await UsuarioModel.find({ fullName: regex }).select('_id').lean();
-    const idsUsuarios = usuariosCoincidentes.map((u: any) => u._id);
+    const idsUsuarios = usuariosCoincidentes.map((u: IUsuario) => u._id);
     filter.$or = [
       { sector: regex },
       { region: regex },

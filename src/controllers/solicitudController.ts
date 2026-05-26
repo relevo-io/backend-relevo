@@ -9,6 +9,7 @@ import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError, AppE
 import { generarPresignedGet } from '../services/storageService.js';
 import { solicitarAnalisisIA } from '../services/aiService.js';
 import { logger } from '../config.js';
+import { UsuarioModel } from '../models/usuarioModel.js';
 
 const parsePagination = (page?: string, limit?: string) => {
   if (!page && !limit) return null;
@@ -223,8 +224,11 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
   });
 
   try {
+    // Obtener idioma del usuario que solicita el análisis
+    const user = await UsuarioModel.findById(userId).select('language').lean();
+
     // Solicitar el análisis al microservicio Python
-    const resultado = await solicitarAnalisisIA(solicitud.cvKey);
+    const resultado = await solicitarAnalisisIA(solicitud.cvKey, user?.language || 'es');
 
     // Guardar el resultado y completar
     const solicitudActualizada = await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
