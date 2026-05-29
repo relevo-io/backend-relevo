@@ -73,7 +73,16 @@ export const getSolicitud = asyncWrapper(async (req: Request<{ id: string }>, re
 });
 
 export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { opportunityId, message } = req.body;
+  const {
+    opportunityId,
+    message,
+    bio,
+    professionalBackground,
+    preferredRegions,
+    availableCapital,
+    financingNeeded,
+    ndaAccepted
+  } = req.body;
   const interestedUserId = req.user?.id;
 
   if (!interestedUserId) {
@@ -89,7 +98,13 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     opportunity: new Types.ObjectId(opportunityId),
     interestedUser: new Types.ObjectId(interestedUserId),
     owner: oferta.owner,
-    message
+    message,
+    bio,
+    professionalBackground,
+    preferredRegions,
+    availableCapital,
+    financingNeeded,
+    ndaAccepted
   });
 
   const resultado = await solicitudService.obtenerSolicitudConDetalles(String(nueva._id));

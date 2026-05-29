@@ -61,6 +61,12 @@ export interface ISolicitud {
   opportunity: Types.ObjectId;
   status: (typeof accessRequestStatuses)[number];
   message?: string;
+  bio?: string;
+  professionalBackground?: string;
+  preferredRegions?: string[];
+  availableCapital?: number;
+  financingNeeded?: boolean;
+  ndaAccepted?: boolean;
   cvKey?: string;
   estadoAnalisis?: (typeof analysisStatuses)[number];
   resultadoIa?: IResultadoIa;
@@ -95,6 +101,39 @@ const solicitudSchema = new Schema<ISolicitud>(
       type: String,
       required: false,
       maxlength: 1000
+    },
+    bio: {
+      type: String,
+      required: true,
+      minlength: 10
+    },
+    professionalBackground: {
+      type: String,
+      required: true,
+      minlength: 10
+    },
+    preferredRegions: [
+      {
+        type: String,
+        trim: true
+      }
+    ],
+    availableCapital: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    financingNeeded: {
+      type: Boolean,
+      required: true
+    },
+    ndaAccepted: {
+      type: Boolean,
+      required: true,
+      validate: {
+        validator: (v: boolean) => v === true,
+        message: 'El acuerdo de confidencialidad debe ser aceptado'
+      }
     },
     cvKey: {
       type: String,
