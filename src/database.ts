@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import { UsuarioModel, IUsuario } from './models/usuarioModel.js';
 import { OfertaModel, IOferta } from './models/ofertaModel.js';
 import { SolicitudModel } from './models/solicitudModel.js';
+import { MentoringModuleModel, IMentoringModule } from './models/mentoringModuleModel.js';
+import { MentoringProgressModel } from './models/mentoringProgressModel.js';
+import { AlertaModel } from './models/alertaModel.js';
+import { NotificacionModel } from './models/notificacionModel.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
@@ -47,6 +51,10 @@ export async function seedingDatabase(): Promise<void> {
     await UsuarioModel.deleteMany({});
     await OfertaModel.deleteMany({});
     await SolicitudModel.deleteMany({});
+    await MentoringModuleModel.deleteMany({});
+    await MentoringProgressModel.deleteMany({});
+    await AlertaModel.deleteMany({});
+    await NotificacionModel.deleteMany({});
 
     logger.info('Seeding final data for Relevo Demo...');
 
@@ -228,6 +236,184 @@ export async function seedingDatabase(): Promise<void> {
       ofertasData.length,
       generatedOffers.length
     );
+
+    const mentoringModulesData: IMentoringModule[] = [
+      {
+        title: {
+          ca: 'Benvinguda',
+          es: 'Bienvenida',
+          en: 'Welcome'
+        },
+        description: {
+          ca: 'Benvingut al servei de mentoring de Relevo.',
+          es: 'Bienvenido al servicio de mentoring de Relevo.',
+          en: 'Welcome to the Relevo mentoring service.'
+        },
+        order: 1,
+        duration: 5,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            title: {
+              ca: 'Benvinguda a la plataforma',
+              es: 'Bienvenida a la plataforma',
+              en: 'Welcome to the platform'
+            },
+            text: {
+              ca: 'En aquest mentoring aprendràs a treure el màxim profit de Relevo per traspassar o adquirir un negoci.',
+              es: 'En este mentoring aprenderás a sacar el máximo provecho de Relevo para traspasar o adquirir un negocio.',
+              en: 'In this mentoring you will learn to get the most out of Relevo to transfer or acquire a business.'
+            }
+          },
+          {
+            type: 'tip',
+            title: {
+              ca: 'Com funciona el Mentoring',
+              es: 'Cómo funciona el Mentoring',
+              en: 'How Mentoring works'
+            },
+            text: {
+              ca: 'A mesura que llegeixis els diferents consells de cada mòdul, podràs marcar-lo com a completat i veure la teva evolució general.',
+              es: 'A medida que leas los diferentes consejos de cada módulo, podrás marcarlo como completado y ver tu evolución general.',
+              en: 'As you read the different tips of each module, you can mark it as completed and see your general evolution.'
+            }
+          }
+        ]
+      },
+      {
+        title: {
+          ca: 'Crear un bon perfil',
+          es: 'Crear un buen perfil',
+          en: 'Create a good profile'
+        },
+        description: {
+          ca: 'Consells per completar el teu perfil de manera atractiva.',
+          es: 'Consejos para completar tu perfil de manera atractiva.',
+          en: 'Tips to complete your profile in an attractive way.'
+        },
+        order: 2,
+        duration: 10,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            title: {
+              ca: 'La importància de la biografia',
+              es: 'La importancia de la biografía',
+              en: 'The importance of biography'
+            },
+            text: {
+              ca: 'Un perfil complet i detallat genera molta més confiança. Explica la teva experiència professional i les teves preferències.',
+              es: 'Un perfil completo y detallado genera mucha más confianza. Explica tu experiencia profesional y tus preferencias.',
+              en: 'A complete and detailed profile generates much more trust. Explain your professional experience and your preferences.'
+            }
+          },
+          {
+            type: 'tip',
+            title: {
+              ca: 'Dades clau i regions d’interès',
+              es: 'Datos clave y regiones de interés',
+              en: 'Key data and regions of interest'
+            },
+            text: {
+              ca: 'Assegura’t d’indicar clarament quines regions prefereixes i mantén actualitzades les teves dades de contacte.',
+              es: 'Asegúrate de indicar claramente qué regiones prefieres y mantén actualizados tus datos de contacto.',
+              en: 'Make sure to clearly indicate which regions you prefer and keep your contact details updated.'
+            }
+          }
+        ]
+      },
+      {
+        title: {
+          ca: 'Crear una bona oferta',
+          es: 'Crear una buena oferta',
+          en: 'Create a good offer'
+        },
+        description: {
+          ca: 'Com descriure el teu negoci o necessitat per cridar l’atenció.',
+          es: 'Cómo describir tu negocio o necesidad para llamar la atención.',
+          en: 'How to describe your business or need to draw attention.'
+        },
+        order: 3,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            title: {
+              ca: 'Descripcions clares i reals',
+              es: 'Descripciones claras y reales',
+              en: 'Clear and real descriptions'
+            },
+            text: {
+              ca: 'Defineix bé el sector, la facturació estimada i el motiu del traspàs. La claredat estalvia temps a ambdues parts.',
+              es: 'Define bien el sector, la facturación estimada y el motivo del traspaso. La claridad ahorra tiempo a ambas partes.',
+              en: 'Clearly define the sector, estimated revenue and reason for transfer. Clarity saves time for both parties.'
+            }
+          },
+          {
+            type: 'tip',
+            title: {
+              ca: 'Informació financera i operativa',
+              es: 'Información financiera y operativa',
+              en: 'Financial and operational information'
+            },
+            text: {
+              ca: 'Proporcionar el rang de facturació anual, el nombre d’empleats i l’any de creació fa que la teva oferta sigui més atractiva.',
+              es: 'Proporcionar el rango de facturación anual, el número de empleados y el año de creación hace que tu oferta sea más atractiva.',
+              en: 'Providing the annual revenue range, number of employees and year of creation makes your offer more attractive.'
+            }
+          }
+        ]
+      },
+      {
+        title: {
+          ca: 'Contactar amb altres usuaris',
+          es: 'Contactar con otros usuarios',
+          en: 'Contact other users'
+        },
+        description: {
+          ca: 'Consells per iniciar converses de manera professional.',
+          es: 'Consejos para iniciar conversaciones de manera profesional.',
+          en: 'Tips to initiate conversations professionally.'
+        },
+        order: 4,
+        duration: 8,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            title: {
+              ca: 'El primer missatge',
+              es: 'El primer mensaje',
+              en: 'The first message'
+            },
+            text: {
+              ca: 'Presenta’t breument, explica per què t’interessa el seu projecte i proposa una breu trucada o reunió de forma respectuosa.',
+              es: 'Preséntate brevemente, explica por qué te interesa su proyecto y propone una breve llamada o reunión de forma respetuosa.',
+              en: 'Introduce yourself briefly, explain why you are interested in their project and suggest a short call or meeting respectfully.'
+            }
+          },
+          {
+            type: 'tip',
+            title: {
+              ca: 'Negociació transparent',
+              es: 'Negociación transparente',
+              en: 'Transparent negotiation'
+            },
+            text: {
+              ca: 'Comunica les teves expectatives de forma transparent des del principi i mantén una actitud oberta i flexible.',
+              es: 'Comunica tus expectativas de forma transparente desde el principio y mantén una actitud abierta y flexible.',
+              en: 'Communicate your expectations transparently from the beginning and keep an open and flexible attitude.'
+            }
+          }
+        ]
+      }
+    ];
+
+    await MentoringModuleModel.insertMany(mentoringModulesData);
+    logger.info('Database ready: %d mentoring modules created.', mentoringModulesData.length);
   } catch (err) {
     logger.error(err, 'Seeding failed');
     throw err;
