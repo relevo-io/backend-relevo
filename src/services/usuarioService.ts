@@ -39,3 +39,13 @@ export const actualizarVisibilidadUsuarios = async (
 export const listarUsuarios = async (): Promise<IUsuario[]> => {
   return await UsuarioModel.find().select('-password').lean();
 };
+
+export const registrarFcmToken = async (id: string, token: string): Promise<void> => {
+  // Primero, removemos el token de cualquier otro usuario que lo tenga registrado para evitar duplicados en dispositivos compartidos
+  await UsuarioModel.updateMany({ fcmTokens: token, _id: { $ne: id } }, { $pull: { fcmTokens: token } });
+  await UsuarioModel.findByIdAndUpdate(id, { $addToSet: { fcmTokens: token } });
+};
+
+export const desregistrarFcmToken = async (id: string, token: string): Promise<void> => {
+  await UsuarioModel.findByIdAndUpdate(id, { $pull: { fcmTokens: token } });
+};

@@ -110,6 +110,7 @@ export interface IUsuario {
   visible?: boolean;
   language?: string;
   theme?: string;
+  fcmTokens?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -207,6 +208,10 @@ const usuarioSchema = new Schema<IUsuario>(
       type: String,
       enum: ['light', 'dark'],
       default: 'light'
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
     }
   },
   {

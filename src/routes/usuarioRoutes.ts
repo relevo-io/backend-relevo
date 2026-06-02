@@ -6,7 +6,8 @@ import {
   deleteManyUsuariosSchema,
   updateManyUsuariosVisibilitySchema,
   usuarioIdParamsSchema,
-  updateUsuarioVisibilitySchema
+  updateUsuarioVisibilitySchema,
+  fcmTokenSchema
 } from '../validators/usuarioValidator.js';
 import { authenticateToken, authorizeRoles, authorizeSelfOrAdmin } from '../middlewares/auth.js';
 import { validateUsuarioUpdateBody } from '../middlewares/usuarioMiddlewares.js';
@@ -130,6 +131,10 @@ const router = Router();
  *         $ref: '#/components/responses/ServerError'
  */
 router.get('/', authenticateToken, authorizeRoles('ADMIN'), usuarioController.getUsuarios);
+
+router.post('/fcm-token', authenticateToken, validate({ body: fcmTokenSchema }), usuarioController.registerFcmToken);
+
+router.delete('/fcm-token/:token', authenticateToken, usuarioController.unregisterFcmToken);
 
 /**
  * @openapi

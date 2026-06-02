@@ -102,6 +102,10 @@ export const updateManyUsuariosVisibilitySchema = z.object({
   visible: z.boolean()
 });
 
+export const fcmTokenSchema = z.object({
+  token: z.string().min(10, 'El token debe tener al menos 10 caracteres')
+});
+
 export type CreateUsuarioBody = z.infer<typeof createUsuarioSchema>;
 export type UpdateUsuarioBody = z.infer<typeof updateUsuarioSchema>;
 export type DeleteManyUsuariosBody = z.infer<typeof deleteManyUsuariosSchema>;

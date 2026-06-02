@@ -3,6 +3,8 @@ import sanitizeHtml from 'sanitize-html';
 import * as chatService from '../services/chatService.js';
 import { logger } from '../config.js';
 import { IMensaje } from '../models/mensajeModel.js';
+import { sendPushNotification } from '../services/firebaseAdminService.js';
+import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
 
 // ─────────────────────────────────────────────
 //  Constants
@@ -170,6 +172,29 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
           chatId,
           message: mensajePopulated
         });
+
+        // Send Push notification using the secondary FCM app
+        try {
+          const recipient = await UsuarioModel.findById(recipientId).select('fcmTokens').lean();
+          if (recipient && recipient.fcmTokens && recipient.fcmTokens.length > 0 && mensajePopulated) {
+            // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
+            const socketsInRoom = await io.in(roomName(chatId)).fetchSockets();
+            const isRecipientActiveInChat = socketsInRoom.some((s) => String(s.data.user?.id) === recipientId);
+
+            if (!isRecipientActiveInChat) {
+              const sender = mensajePopulated.sender as unknown as IUsuario;
+              const senderName = sender?.fullName || 'Un usuario';
+              sendPushNotification(recipientId, recipient.fcmTokens, `Nuevo mensaje de ${senderName}`, content, {
+                click_action: `/chats/${chatId}`,
+                chatId: chatId
+              }).catch((err) => logger.error({ err }, '[Socket] sendPushNotification error'));
+            } else {
+              logger.info('[Socket] Receptor %s está activo en la sala %s, omitiendo push', recipientId, chatId);
+            }
+          }
+        } catch (pushErr) {
+          logger.error({ pushErr }, '[Socket] FCM flow error in chatHandler');
+        }
 
         // Acknowledgement — frontend knows message hit the DB
         callback?.({ ok: true, message: mensajePopulated });
