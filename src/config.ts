@@ -38,6 +38,13 @@ export const config = {
     url: process.env.PYTHON_SERVICE_URL || 'http://localhost:8000',
     apiKey: process.env.PYTHON_SERVICE_API_KEY || 'default_secret_key'
   },
+  weaviate: {
+    url: process.env.WEAVIATE_URL || 'http://localhost:8081'
+  },
+  llm: {
+    url: process.env.LLM_URL || 'http://10.4.119.50:8080',
+    model: process.env.LLM_MODEL || 'qwen2.5:14b'
+  },
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || '',
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',

@@ -3,6 +3,7 @@ import { UsuarioModel, IUsuario } from './models/usuarioModel.js';
 import { OfertaModel, IOferta } from './models/ofertaModel.js';
 import { SolicitudModel } from './models/solicitudModel.js';
 import { config, logger } from './config.js';
+import { reindexAssistantDocuments } from './services/assistantService.js';
 
 export async function setupDatabase(): Promise<void> {
   try {
@@ -228,6 +229,13 @@ export async function seedingDatabase(): Promise<void> {
       ofertasData.length,
       generatedOffers.length
     );
+
+    try {
+      const { indexed } = await reindexAssistantDocuments();
+      logger.info('Assistant index ready: %d documents indexed in Weaviate.', indexed);
+    } catch (indexError) {
+      logger.warn(indexError, 'Seed completed, but assistant index could not be rebuilt in Weaviate');
+    }
   } catch (err) {
     logger.error(err, 'Seeding failed');
     throw err;

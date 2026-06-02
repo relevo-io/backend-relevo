@@ -37,6 +37,27 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+export const optionalAuthenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    req.user = verifyAccessToken(token);
+    next();
+  } catch (err: unknown) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return next(new UnauthorizedError('Access token expirado'));
+    }
+
+    return next(new UnauthorizedError('Token inválido'));
+  }
+};
+
 export const authorizeRoles = (
   ...allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>
 ): ((req: AuthRequest, res: Response, next: NextFunction) => void) => {

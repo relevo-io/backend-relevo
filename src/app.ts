@@ -8,6 +8,7 @@ import solicitudRoutes from './routes/solicitudRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import storageRoutes from './routes/storageRoutes.js';
+import assistantRoutes from './routes/assistantRoutes.js';
 import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
@@ -71,6 +72,7 @@ app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/storage', storageRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)
