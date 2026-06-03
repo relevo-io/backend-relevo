@@ -125,7 +125,7 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
           'Nueva solicitud',
           `${candidateName} te ha solicitado en una oferta`,
           {
-            click_action: '/solicitudes',
+            click_action: '/mis-solicitudes',
             solicitudId: String(resultado._id)
           }
         ).catch((err) => logger.error({ err }, 'Error al enviar notificación de nueva solicitud'));
@@ -186,7 +186,7 @@ export const patchEstadoSolicitud = asyncWrapper(
           const candidate = await UsuarioModel.findById(candidateId).select('fcmTokens').lean();
           if (candidate && candidate.fcmTokens && candidate.fcmTokens.length > 0) {
             sendPushNotification(candidateId, candidate.fcmTokens, title, bodyText, {
-              click_action: '/solicitudes',
+              click_action: '/mis-solicitudes',
               solicitudId: String(solicitudConDetalles._id),
               status: req.body.status
             }).catch((err) => logger.error({ err }, 'Error al enviar notificación de cambio de estado de solicitud'));
