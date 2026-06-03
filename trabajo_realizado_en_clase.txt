@@ -1,0 +1,31 @@
+Registro y Gestión de Tokens FCM (Firebase Cloud Messaging)
+
+Registro automático: Al iniciar sesión (y si diste permisos), el frontend obtiene el token FCM y lo registra en POST /api/usuarios/fcm-token.
+Eliminación al salir: Al cerrar sesión o apagar las notificaciones, se borra en DELETE /api/usuarios/fcm-token/:token para no recibir más alertas.
+Autolimpieza del Backend: Si Firebase detecta que un token ha caducado o el usuario desinstaló/bloqueó el navegador, el backend lo elimina automáticamente de la base de datos.
+
+Disparadores de Notificaciones Push (Cuándo se envían)
+Nueva Solicitud de Oferta:
+Destinatario: El propietario de la oferta.
+Mensaje: "[Candidato] te ha solicitado en una oferta".
+Acción al pulsar: Redirige a /solicitudes.
+
+Cambio de Estado de Solicitud (Aceptado o Rechazado):
+Destinatario: El candidato que hizo la solicitud.
+Mensaje: "[Propietario] te ha aceptado la solicitud" o "[Propietario] te ha denegado la solicitud".
+Acción al pulsar: Redirige a /solicitudes.
+Nuevo Mensaje en el Chat:
+Destinatario: El receptor del mensaje.
+
+Control de estado (Socket.io):
+Si el receptor ya está dentro del chat abierto (osea esta online): No se envía la notificación push ya que seria molesto.
+Si el receptor no está en el chat: Si se envía la push con el texto del mensaje.
+Acción al pulsar: Redirige directo a /chats/[chatId].
+
+Posibles casos:
+Si la pestaña está en Segundo Plano:
+Salta la notificación de escritorio nativa de macOS a través del Service Worker.
+
+Si la pestaña está en Primer Plano (Abierta y activa en pantalla):
+Si estás leyendo ese mismo chat: Se descarta la alerta (ya estás viendo los mensajes entrar en tiempo real).
+Si estás en otra sección (ej. Home): Muestra un Toast flotante interno dentro de la propia página web.
