@@ -31,7 +31,8 @@ export const login = asyncWrapper(async (req: Request, res: Response, _next: Nex
       email: usuario.email,
       roles: usuario.roles,
       language: usuario.language,
-      theme: usuario.theme
+      theme: usuario.theme,
+      notificationPreferences: usuario.notificationPreferences
     }
   });
 });
@@ -64,7 +65,8 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, _ne
         email: usuario.email,
         roles: usuario.roles,
         language: usuario.language,
-        theme: usuario.theme
+        theme: usuario.theme,
+        notificationPreferences: usuario.notificationPreferences
       }
     });
   } catch (_error) {
@@ -112,7 +114,8 @@ export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) =>
       roles: usuario.roles,
       language: usuario.language,
       theme: usuario.theme,
-      authProvider: usuario.authProvider
+      authProvider: usuario.authProvider,
+      notificationPreferences: usuario.notificationPreferences
     }
   });
 });

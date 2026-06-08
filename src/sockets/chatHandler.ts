@@ -175,19 +175,27 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
 
         // Send Push notification using the secondary FCM app
         try {
-          const recipient = await UsuarioModel.findById(recipientId).select('fcmTokens').lean();
+          const recipient = await UsuarioModel.findById(recipientId).select('fcmTokens notificationPreferences').lean();
           if (recipient && recipient.fcmTokens && recipient.fcmTokens.length > 0 && mensajePopulated) {
             // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
             const socketsInRoom = await io.in(roomName(chatId)).fetchSockets();
             const isRecipientActiveInChat = socketsInRoom.some((s) => String(s.data.user?.id) === recipientId);
 
             if (!isRecipientActiveInChat) {
-              const sender = mensajePopulated.sender as unknown as IUsuario;
-              const senderName = sender?.fullName || 'Un usuario';
-              sendPushNotification(recipientId, recipient.fcmTokens, `Nuevo mensaje de ${senderName}`, content, {
-                click_action: `/chats/${chatId}`,
-                chatId: chatId
-              }).catch((err) => logger.error({ err }, '[Socket] sendPushNotification error'));
+              const showNotification = recipient.notificationPreferences?.newMessages !== false;
+              if (showNotification) {
+                const sender = mensajePopulated.sender as unknown as IUsuario;
+                const senderName = sender?.fullName || 'Un usuario';
+                sendPushNotification(recipientId, recipient.fcmTokens, `Nuevo mensaje de ${senderName}`, content, {
+                  click_action: `/chats/${chatId}`,
+                  chatId: chatId
+                }).catch((err) => logger.error({ err }, '[Socket] sendPushNotification error'));
+              } else {
+                logger.info(
+                  '[Socket] Receptor %s tiene desactivadas las notificaciones de nuevos mensajes',
+                  recipientId
+                );
+              }
             } else {
               logger.info('[Socket] Receptor %s está activo en la sala %s, omitiendo push', recipientId, chatId);
             }

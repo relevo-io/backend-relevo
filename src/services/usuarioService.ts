@@ -1,4 +1,4 @@
-import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
+import { IUsuario, UsuarioModel, INotificationPreferences } from '../models/usuarioModel.js';
 
 export const crearUsuario = async (data: Partial<IUsuario>): Promise<IUsuario> => {
   return await new UsuarioModel(data).save();
@@ -48,4 +48,17 @@ export const registrarFcmToken = async (id: string, token: string): Promise<void
 
 export const desregistrarFcmToken = async (id: string, token: string): Promise<void> => {
   await UsuarioModel.findByIdAndUpdate(id, { $pull: { fcmTokens: token } });
+};
+
+export const actualizarPreferenciasNotificacion = async (
+  id: string,
+  prefs: INotificationPreferences
+): Promise<IUsuario | null> => {
+  return await UsuarioModel.findByIdAndUpdate(
+    id,
+    { $set: { notificationPreferences: prefs } },
+    { returnDocument: 'after' }
+  )
+    .select('-password')
+    .lean();
 };

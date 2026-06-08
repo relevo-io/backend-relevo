@@ -117,18 +117,23 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     const candidateName = candidate?.fullName || 'Un usuario';
 
     try {
-      const owner = await UsuarioModel.findById(ownerId).select('fcmTokens').lean();
+      const owner = await UsuarioModel.findById(ownerId).select('fcmTokens notificationPreferences').lean();
       if (owner && owner.fcmTokens && owner.fcmTokens.length > 0) {
-        sendPushNotification(
-          ownerId,
-          owner.fcmTokens,
-          'Nueva solicitud',
-          `${candidateName} te ha solicitado en una oferta`,
-          {
-            click_action: '/mis-solicitudes',
-            solicitudId: String(resultado._id)
-          }
-        ).catch((err) => logger.error({ err }, 'Error al enviar notificación de nueva solicitud'));
+        const showNotification = owner.notificationPreferences?.newApplications !== false;
+        if (showNotification) {
+          sendPushNotification(
+            ownerId,
+            owner.fcmTokens,
+            'Nueva solicitud',
+            `${candidateName} te ha solicitado en una oferta`,
+            {
+              click_action: '/mis-solicitudes',
+              solicitudId: String(resultado._id)
+            }
+          ).catch((err) => logger.error({ err }, 'Error al enviar notificación de nueva solicitud'));
+        } else {
+          logger.info('Propietario %s tiene desactivadas las notificaciones de nuevas solicitudes', ownerId);
+        }
       }
     } catch (pushErr) {
       logger.error({ pushErr }, 'Error en el flujo de notificación de nueva solicitud');
@@ -183,13 +188,21 @@ export const patchEstadoSolicitud = asyncWrapper(
               ? `${ownerName} te ha aceptado la solicitud`
               : `${ownerName} te ha denegado la solicitud`;
 
-          const candidate = await UsuarioModel.findById(candidateId).select('fcmTokens').lean();
+          const candidate = await UsuarioModel.findById(candidateId).select('fcmTokens notificationPreferences').lean();
           if (candidate && candidate.fcmTokens && candidate.fcmTokens.length > 0) {
-            sendPushNotification(candidateId, candidate.fcmTokens, title, bodyText, {
-              click_action: '/mis-solicitudes',
-              solicitudId: String(solicitudConDetalles._id),
-              status: req.body.status
-            }).catch((err) => logger.error({ err }, 'Error al enviar notificación de cambio de estado de solicitud'));
+            const showNotification = candidate.notificationPreferences?.applicationStatus !== false;
+            if (showNotification) {
+              sendPushNotification(candidateId, candidate.fcmTokens, title, bodyText, {
+                click_action: '/mis-solicitudes',
+                solicitudId: String(solicitudConDetalles._id),
+                status: req.body.status
+              }).catch((err) => logger.error({ err }, 'Error al enviar notificación de cambio de estado de solicitud'));
+            } else {
+              logger.info(
+                'Candidato %s tiene desactivadas las notificaciones de cambio de estado de solicitud',
+                candidateId
+              );
+            }
           }
         }
       } catch (pushErr) {
@@ -308,6 +321,32 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
       estadoAnalisis: 'COMPLETADO',
       resultadoIa: resultado
     });
+
+    // Enviar notificación push al reclutador (el usuario que solicitó el análisis)
+    try {
+      const recruiter = await UsuarioModel.findById(userId).select('fcmTokens notificationPreferences').lean();
+      if (recruiter && recruiter.fcmTokens && recruiter.fcmTokens.length > 0) {
+        const showNotification = recruiter.notificationPreferences?.cvAnalysis !== false;
+        if (showNotification) {
+          const solicitudConDetalles = await solicitudService.obtenerSolicitudConDetalles(solicitud._id!.toString());
+          const candidate = solicitudConDetalles?.interestedUser as unknown as IUsuario;
+          const candidateName = candidate?.fullName || 'un candidato';
+
+          sendPushNotification(
+            userId,
+            recruiter.fcmTokens,
+            'Análisis de CV completado',
+            `El análisis por IA del CV de ${candidateName} ha finalizado`,
+            {
+              click_action: '/mis-solicitudes',
+              solicitudId: solicitud._id!.toString()
+            }
+          ).catch((err) => logger.error({ err }, 'Error al enviar notificación de fin de análisis de CV'));
+        }
+      }
+    } catch (pushErr) {
+      logger.error({ pushErr }, 'Error en el flujo de notificación de fin de análisis de CV');
+    }
 
     res.status(200).json(solicitudActualizada);
   } catch (error) {
