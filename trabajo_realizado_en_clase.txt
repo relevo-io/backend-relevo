@@ -37,3 +37,5 @@ TRABAJO FUERA DE CLASE:
 Implementar notifiación cuando acaba procesarse el analisis de IA
 Hacer un menu de configruación de notificaciones push, el cual deja elejir al usuario que tipo de notificaciones quiere recibir
 Esto esta configuración se guarda persistenetmente en el mongodb para futuras sesiones de este mismo usuario.
+Historial de notificaciones, guardar permanentemente en mongodb las notificaciones y que estas no se borren al cerrar sesion.
+En el emoji de la campana al abrirlo tienes la opcioens de ir a config para activar desactivar las que quieras, y tienes el historia de notificaciones

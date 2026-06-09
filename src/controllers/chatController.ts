@@ -3,11 +3,12 @@ import { AuthRequest } from '../middlewares/auth.js';
 import * as chatService from '../services/chatService.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
+import { NotificacionModel } from '../models/notificacionModel.js';
 
 // ─────────────────────────────────────────────
 //  POST /api/chats
 //  Crea o recupera un chat existente para (oferta + interesado)
-// ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────
 export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const callerId = req.user!.id;
   const { ofertaId, interestedId } = req.body;
@@ -50,7 +51,7 @@ export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Respon
 // ─────────────────────────────────────────────
 //  GET /api/chats
 //  Mis chats activos (como owner o como interested)
-// ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────
 export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
 
@@ -63,7 +64,7 @@ export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response): 
 //  GET /api/chats/:chatId/messages
 //  Historial con paginación por cursor temporal
 //  Query params: ?limit=30&before=<ISO_date>
-// ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────
 export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const { chatId } = req.params;
   const limit = Math.min(parseInt(req.query['limit'] as string) || 30, 100);
@@ -78,7 +79,7 @@ export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Respon
 // ─────────────────────────────────────────────
 //  PATCH /api/chats/:chatId/read
 //  Marca los mensajes como leídos (reset unread counter)
-// ─────────────────────────────────────────────
+//  ─────────────────────────────────────────────
 export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
@@ -97,6 +98,12 @@ export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Respons
 
   const resetField = isOwner ? { unreadOwner: 0 } : { unreadInterested: 0 };
   await chatService.resetearContadorNoLeidos(chatId, resetField);
+
+  // Marcar las notificaciones del chat como leídas en la base de datos
+  await NotificacionModel.updateMany(
+    { userId, type: 'chat', 'metadata.chatId': chatId, read: false },
+    { $set: { read: true } }
+  );
 
   res.status(200).json({ ok: true });
 });
