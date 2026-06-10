@@ -1,68 +1,16 @@
-```mermaid
-classDiagram
-    class Usuario {
-        +String fullName
-        +String email
-        +String password
-        +String role
-        +String location
-        +String bio
-        +int yearsOfExperience
-        +List sectorsOfInterest
-        +List preferredRegions
-        +List transitionPreferences
-    }
+# MÍNIM 2 PAULA
 
-    class Oportunidad {
-        +String title
-        +String sector
-        +String region
-        +String cityApprox
-        +int businessAgeYears
-        +String employeeRange
-        +String descriptionShort
-        +String descriptionExtended
-        +String transitionType
-        +String status
-        +String visibilityLevel
-    }
+Como usuario, necesito disponer de un sistema de
+mentoring con seguimiento de progreso y recibir alertas
+personalizadas sobre nuevas ofertas según mis preferencias
 
-    class SolicitudAcceso {
-        +String message
-        +String status
-    }
+# 1 SISTEMA DE MENTORING
 
-    class Conversacion {
-        +boolean isActive
-    }
+Implementat al backend tota la lògica necesaria per gestionar el sistema de mentoring. Afegit al database els diferents moduls de mentoring amb el seu contingut
+corresponent.
+Ajuda D'IA per el plantejament del mentoring i l'escriptura dels textos dels moduls i el seu contingut en diferents idiomes a la funcio seeding database del .ts
 
-    class Mensaje {
-        +String content
-        +DateTime sentAt
-        +DateTime readAt
-    }
+# 2 ALERTES DE PREFERÈNCIES D'OFERTES
 
-    class Documento {
-        +String title
-        +String description
-        +String documentType
-        +String fileUrl
-        +String visibility
-    }
-
-    class Transicion {
-        +String currentStage
-        +String notes
-    }
-
-    %% Relaciones de cardinalidad y lógica
-    Usuario "1" --> "*" Oportunidad : crea (owner)
-    Oportunidad "1" --> "*" SolicitudAcceso : recibe
-    Usuario "1" --> "*" SolicitudAcceso : solicita (interested)
-    SolicitudAcceso "1" -- "0..1" Conversacion : genera (si se acepta)
-    Conversacion "1" *-- "*" Mensaje : contiene
-    Usuario "1" --> "*" Mensaje : envía (sender)
-    Oportunidad "1" *-- "*" Documento : posee
-    Oportunidad "1" -- "*" Transicion : modela flujo
-    Usuario "1" -- "*" Transicion : participa
-```
+Implementat al backend tota la lògica necesaria per generar les alertes de preferencies d'ofertes.
+Ajuda d'IA generativa per algunes funcions concretes del service creats

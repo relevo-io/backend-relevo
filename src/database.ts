@@ -4,8 +4,6 @@ import { OfertaModel, IOferta } from './models/ofertaModel.js';
 import { SolicitudModel } from './models/solicitudModel.js';
 import { MentoringModuleModel, IMentoringModule } from './models/mentoringModuleModel.js';
 import { MentoringProgressModel } from './models/mentoringProgressModel.js';
-import { AlertaModel } from './models/alertaModel.js';
-import { NotificacionModel } from './models/notificacionModel.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
@@ -53,8 +51,6 @@ export async function seedingDatabase(): Promise<void> {
     await SolicitudModel.deleteMany({});
     await MentoringModuleModel.deleteMany({});
     await MentoringProgressModel.deleteMany({});
-    await AlertaModel.deleteMany({});
-    await NotificacionModel.deleteMany({});
 
     logger.info('Seeding final data for Relevo Demo...');
 
@@ -256,8 +252,8 @@ export async function seedingDatabase(): Promise<void> {
           {
             type: 'tip',
             title: {
-              ca: 'Benvinguda a la plataforma',
-              es: 'Bienvenida a la plataforma',
+              ca: 'Benvingudo/a a la plataforma',
+              es: 'Bienvenido/a a la plataforma',
               en: 'Welcome to the platform'
             },
             text: {
