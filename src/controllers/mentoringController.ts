@@ -26,3 +26,17 @@ export const completeModule = asyncWrapper(async (req: AuthRequest, res: Respons
   const progress = await mentoringService.completarModulo(req.user.id, moduleId);
   res.status(200).json(progress);
 });
+
+export const getMarkdownContent = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { route, contentKey } = req.params;
+  const lang = (req.query.lang as string) || req.headers['accept-language']?.split(',')[0].split('-')[0] || 'es';
+
+  if (route !== 'BUY' && route !== 'SELL') {
+    res.status(400).json({ error: 'Ruta no vàlida (ha de ser BUY o SELL)' });
+    return;
+  }
+
+  const content = await mentoringService.obtenerContenidoMarkdown(route, contentKey, lang);
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.status(200).send(content);
+});

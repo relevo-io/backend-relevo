@@ -35,7 +35,28 @@ export async function setupDatabase(): Promise<void> {
         throw err;
       }
     }
+
+    try {
+      const mentoringIndexes = await MentoringModuleModel.collection.indexes();
+      const orderIndex = mentoringIndexes.find((index) => index.name === 'order_1');
+      if (orderIndex) {
+        await MentoringModuleModel.collection.dropIndex('order_1');
+        logger.info('Dropped outdated mentoring order index');
+      }
+    } catch (err) {
+      const mongoError = err as { codeName?: string; code?: number };
+      if (
+        mongoError.codeName !== 'IndexNotFound' &&
+        mongoError.code !== 27 &&
+        mongoError.codeName !== 'NamespaceNotFound' &&
+        mongoError.code !== 26
+      ) {
+        throw err;
+      }
+    }
+
     await UsuarioModel.syncIndexes();
+    await MentoringModuleModel.syncIndexes();
     logger.info('Connected to MongoDB');
   } catch (err) {
     logger.error(err, 'Database connection failed');
@@ -234,175 +255,201 @@ export async function seedingDatabase(): Promise<void> {
     );
 
     const mentoringModulesData: IMentoringModule[] = [
+      // === RUTA VENEDOR (SELL) ===
       {
-        title: {
-          ca: 'Benvinguda',
-          es: 'Bienvenida',
-          en: 'Welcome'
-        },
-        description: {
-          ca: 'Benvingut al servei de mentoring de Relevo.',
-          es: 'Bienvenido al servicio de mentoring de Relevo.',
-          en: 'Welcome to the Relevo mentoring service.'
-        },
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m1.title',
+        descriptionKey: 'mentoring.seller.m1.description',
         order: 1,
-        duration: 5,
-        isActive: true,
-        items: [
-          {
-            type: 'tip',
-            title: {
-              ca: 'Benvingudo/a a la plataforma',
-              es: 'Bienvenido/a a la plataforma',
-              en: 'Welcome to the platform'
-            },
-            text: {
-              ca: 'En aquest mentoring aprendràs a treure el màxim profit de Relevo per traspassar o adquirir un negoci.',
-              es: 'En este mentoring aprenderás a sacar el máximo provecho de Relevo para traspasar o adquirir un negocio.',
-              en: 'In this mentoring you will learn to get the most out of Relevo to transfer or acquire a business.'
-            }
-          },
-          {
-            type: 'tip',
-            title: {
-              ca: 'Com funciona el Mentoring',
-              es: 'Cómo funciona el Mentoring',
-              en: 'How Mentoring works'
-            },
-            text: {
-              ca: 'A mesura que llegeixis els diferents consells de cada mòdul, podràs marcar-lo com a completat i veure la teva evolució general.',
-              es: 'A medida que leas los diferentes consejos de cada módulo, podrás marcarlo como completado y ver tu evolución general.',
-              en: 'As you read the different tips of each module, you can mark it as completed and see your general evolution.'
-            }
-          }
-        ]
-      },
-      {
-        title: {
-          ca: 'Crear un bon perfil',
-          es: 'Crear un buen perfil',
-          en: 'Create a good profile'
-        },
-        description: {
-          ca: 'Consells per completar el teu perfil de manera atractiva.',
-          es: 'Consejos para completar tu perfil de manera atractiva.',
-          en: 'Tips to complete your profile in an attractive way.'
-        },
-        order: 2,
-        duration: 10,
-        isActive: true,
-        items: [
-          {
-            type: 'tip',
-            title: {
-              ca: 'La importància de la biografia',
-              es: 'La importancia de la biografía',
-              en: 'The importance of biography'
-            },
-            text: {
-              ca: 'Un perfil complet i detallat genera molta més confiança. Explica la teva experiència professional i les teves preferències.',
-              es: 'Un perfil completo y detallado genera mucha más confianza. Explica tu experiencia profesional y tus preferencias.',
-              en: 'A complete and detailed profile generates much more trust. Explain your professional experience and your preferences.'
-            }
-          },
-          {
-            type: 'tip',
-            title: {
-              ca: 'Dades clau i regions d’interès',
-              es: 'Datos clave y regiones de interés',
-              en: 'Key data and regions of interest'
-            },
-            text: {
-              ca: 'Assegura’t d’indicar clarament quines regions prefereixes i mantén actualitzades les teves dades de contacte.',
-              es: 'Asegúrate de indicar claramente qué regiones prefieres y mantén actualizados tus datos de contacto.',
-              en: 'Make sure to clearly indicate which regions you prefer and keep your contact details updated.'
-            }
-          }
-        ]
-      },
-      {
-        title: {
-          ca: 'Crear una bona oferta',
-          es: 'Crear una buena oferta',
-          en: 'Create a good offer'
-        },
-        description: {
-          ca: 'Com descriure el teu negoci o necessitat per cridar l’atenció.',
-          es: 'Cómo describir tu negocio o necesidad para llamar la atención.',
-          en: 'How to describe your business or need to draw attention.'
-        },
-        order: 3,
         duration: 15,
         isActive: true,
         items: [
           {
             type: 'tip',
-            title: {
-              ca: 'Descripcions clares i reals',
-              es: 'Descripciones claras y reales',
-              en: 'Clear and real descriptions'
-            },
-            text: {
-              ca: 'Defineix bé el sector, la facturació estimada i el motiu del traspàs. La claredat estalvia temps a ambdues parts.',
-              es: 'Define bien el sector, la facturación estimada y el motivo del traspaso. La claridad ahorra tiempo a ambas partes.',
-              en: 'Clearly define the sector, estimated revenue and reason for transfer. Clarity saves time for both parties.'
-            }
-          },
-          {
-            type: 'tip',
-            title: {
-              ca: 'Informació financera i operativa',
-              es: 'Información financiera y operativa',
-              en: 'Financial and operational information'
-            },
-            text: {
-              ca: 'Proporcionar el rang de facturació anual, el nombre d’empleats i l’any de creació fa que la teva oferta sigui més atractiva.',
-              es: 'Proporcionar el rango de facturación anual, el número de empleados y el año de creación hace que tu oferta sea más atractiva.',
-              en: 'Providing the annual revenue range, number of employees and year of creation makes your offer more attractive.'
-            }
+            titleKey: 'mentoring.seller.m1.i1.title',
+            contentKey: 'sell_m1_i1'
           }
         ]
       },
       {
-        title: {
-          ca: 'Contactar amb altres usuaris',
-          es: 'Contactar con otros usuarios',
-          en: 'Contact other users'
-        },
-        description: {
-          ca: 'Consells per iniciar converses de manera professional.',
-          es: 'Consejos para iniciar conversaciones de manera profesional.',
-          en: 'Tips to initiate conversations professionally.'
-        },
-        order: 4,
-        duration: 8,
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m2.title',
+        descriptionKey: 'mentoring.seller.m2.description',
+        order: 2,
+        duration: 20,
         isActive: true,
         items: [
           {
             type: 'tip',
-            title: {
-              ca: 'El primer missatge',
-              es: 'El primer mensaje',
-              en: 'The first message'
-            },
-            text: {
-              ca: 'Presenta’t breument, explica per què t’interessa el seu projecte i proposa una breu trucada o reunió de forma respectuosa.',
-              es: 'Preséntate brevemente, explica por qué te interesa su proyecto y propone una breve llamada o reunión de forma respetuosa.',
-              en: 'Introduce yourself briefly, explain why you are interested in their project and suggest a short call or meeting respectfully.'
-            }
-          },
+            titleKey: 'mentoring.seller.m2.i1.title',
+            contentKey: 'sell_m2_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m3.title',
+        descriptionKey: 'mentoring.seller.m3.description',
+        order: 3,
+        duration: 25,
+        isActive: true,
+        items: [
           {
             type: 'tip',
-            title: {
-              ca: 'Negociació transparent',
-              es: 'Negociación transparente',
-              en: 'Transparent negotiation'
-            },
-            text: {
-              ca: 'Comunica les teves expectatives de forma transparent des del principi i mantén una actitud oberta i flexible.',
-              es: 'Comunica tus expectativas de forma transparente desde el principio y mantén una actitud abierta y flexible.',
-              en: 'Communicate your expectations transparently from the beginning and keep an open and flexible attitude.'
-            }
+            titleKey: 'mentoring.seller.m3.i1.title',
+            contentKey: 'sell_m3_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m4.title',
+        descriptionKey: 'mentoring.seller.m4.description',
+        order: 4,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m4.i1.title',
+            contentKey: 'sell_m4_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m5.title',
+        descriptionKey: 'mentoring.seller.m5.description',
+        order: 5,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m5.i1.title',
+            contentKey: 'sell_m5_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m6.title',
+        descriptionKey: 'mentoring.seller.m6.description',
+        order: 6,
+        duration: 30,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m6.i1.title',
+            contentKey: 'sell_m6_i1'
+          }
+        ]
+      },
+
+      // === RUTA COMPRADOR (BUY) ===
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m1.title',
+        descriptionKey: 'mentoring.buyer.m1.description',
+        order: 1,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m1.i1.title',
+            contentKey: 'buy_m1_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m2.title',
+        descriptionKey: 'mentoring.buyer.m2.description',
+        order: 2,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m2.i1.title',
+            contentKey: 'buy_m2_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m3.title',
+        descriptionKey: 'mentoring.buyer.m3.description',
+        order: 3,
+        duration: 25,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m3.i1.title',
+            contentKey: 'buy_m3_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m4.title',
+        descriptionKey: 'mentoring.buyer.m4.description',
+        order: 4,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m4.i1.title',
+            contentKey: 'buy_m4_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m5.title',
+        descriptionKey: 'mentoring.buyer.m5.description',
+        order: 5,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m5.i1.title',
+            contentKey: 'buy_m5_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m6.title',
+        descriptionKey: 'mentoring.buyer.m6.description',
+        order: 6,
+        duration: 30,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m6.i1.title',
+            contentKey: 'buy_m6_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m7.title',
+        descriptionKey: 'mentoring.buyer.m7.description',
+        order: 7,
+        duration: 25,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m7.i1.title',
+            contentKey: 'buy_m7_i1'
           }
         ]
       }

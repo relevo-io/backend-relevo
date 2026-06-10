@@ -1,22 +1,17 @@
 import { Schema, model, Types } from 'mongoose';
 
-export interface ILocalizedText {
-  ca: string;
-  es: string;
-  en: string;
-}
-
 export interface IMentoringItem {
   type: 'tip' | 'question' | 'task';
-  title: ILocalizedText;
-  text: ILocalizedText;
-  options?: ILocalizedText[];
+  titleKey: string;
+  contentKey: string;
+  optionsKeys?: string[];
 }
 
 export interface IMentoringModule {
   _id?: Types.ObjectId;
-  title: ILocalizedText;
-  description: ILocalizedText;
+  route: 'BUY' | 'SELL';
+  titleKey: string;
+  descriptionKey: string;
   items: IMentoringItem[];
   order: number;
   duration: number;
@@ -25,15 +20,6 @@ export interface IMentoringModule {
   updatedAt?: Date;
 }
 
-const localizedTextSchema = new Schema<ILocalizedText>(
-  {
-    ca: { type: String, required: true },
-    es: { type: String, required: true },
-    en: { type: String, required: true }
-  },
-  { _id: false }
-);
-
 const mentoringItemSchema = new Schema<IMentoringItem>(
   {
     type: {
@@ -41,17 +27,17 @@ const mentoringItemSchema = new Schema<IMentoringItem>(
       enum: ['tip', 'question', 'task'],
       required: true
     },
-    title: {
-      type: localizedTextSchema,
+    titleKey: {
+      type: String,
       required: true
     },
-    text: {
-      type: localizedTextSchema,
+    contentKey: {
+      type: String,
       required: true
     },
-    options: [
+    optionsKeys: [
       {
-        type: localizedTextSchema
+        type: String
       }
     ]
   },
@@ -60,12 +46,17 @@ const mentoringItemSchema = new Schema<IMentoringItem>(
 
 const mentoringModuleSchema = new Schema<IMentoringModule>(
   {
-    title: {
-      type: localizedTextSchema,
+    route: {
+      type: String,
+      enum: ['BUY', 'SELL'],
       required: true
     },
-    description: {
-      type: localizedTextSchema,
+    titleKey: {
+      type: String,
+      required: true
+    },
+    descriptionKey: {
+      type: String,
       required: true
     },
     items: {
@@ -74,8 +65,7 @@ const mentoringModuleSchema = new Schema<IMentoringModule>(
     },
     order: {
       type: Number,
-      required: true,
-      unique: true
+      required: true
     },
     duration: {
       type: Number,
@@ -91,5 +81,7 @@ const mentoringModuleSchema = new Schema<IMentoringModule>(
     timestamps: true
   }
 );
+
+mentoringModuleSchema.index({ route: 1, order: 1 }, { unique: true });
 
 export const MentoringModuleModel = model<IMentoringModule>('MentoringModule', mentoringModuleSchema);

@@ -1,18 +1,25 @@
 import { Types } from 'mongoose';
-import { MentoringModuleModel, ILocalizedText } from '../models/mentoringModuleModel.js';
+import { MentoringModuleModel } from '../models/mentoringModuleModel.js';
 import { IMentoringProgress, MentoringProgressModel } from '../models/mentoringProgressModel.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface IFlatMentoringItem {
   type: 'tip' | 'question' | 'task';
-  title: string;
-  text: string;
-  options?: string[];
+  titleKey: string;
+  contentKey: string;
+  optionsKeys?: string[];
 }
 
 export interface IFlatMentoringModule {
   _id?: Types.ObjectId;
-  title: string;
-  description: string;
+  route: 'BUY' | 'SELL';
+  titleKey: string;
+  descriptionKey: string;
   items: IFlatMentoringItem[];
   order: number;
   duration: number;
@@ -21,23 +28,18 @@ export interface IFlatMentoringModule {
   updatedAt?: Date;
 }
 
-const localizeText = (textObj: ILocalizedText | undefined, lang: string): string => {
-  if (!textObj) return '';
-  const key = lang as keyof ILocalizedText;
-  return textObj[key] || textObj['es'] || textObj['en'] || '';
-};
-
-export const listarModulosActivos = async (lang: string): Promise<IFlatMentoringModule[]> => {
-  const modules = await MentoringModuleModel.find({ isActive: true }).sort({ order: 1 }).lean();
+export const listarModulosActivos = async (_lang?: string): Promise<IFlatMentoringModule[]> => {
+  const modules = await MentoringModuleModel.find({ isActive: true }).sort({ route: 1, order: 1 }).lean();
   return modules.map((mod) => ({
     _id: mod._id,
-    title: localizeText(mod.title, lang),
-    description: localizeText(mod.description, lang),
+    route: mod.route,
+    titleKey: mod.titleKey,
+    descriptionKey: mod.descriptionKey,
     items: (mod.items || []).map((item) => ({
       type: item.type,
-      title: localizeText(item.title, lang),
-      text: localizeText(item.text, lang),
-      options: (item.options || []).map((opt) => localizeText(opt, lang))
+      titleKey: item.titleKey,
+      contentKey: item.contentKey,
+      optionsKeys: item.optionsKeys
     })),
     order: mod.order,
     duration: mod.duration,
@@ -45,6 +47,24 @@ export const listarModulosActivos = async (lang: string): Promise<IFlatMentoring
     createdAt: mod.createdAt,
     updatedAt: mod.updatedAt
   }));
+};
+
+export const obtenerContenidoMarkdown = async (
+  route: 'BUY' | 'SELL',
+  contentKey: string,
+  lang: string
+): Promise<string> => {
+  const normalizedLang = ['ca', 'es', 'en'].includes(lang) ? lang : 'es';
+  const routeFolder = route === 'BUY' ? 'buyer' : 'seller';
+  const filePath = path.join(__dirname, `../assets/mentoring/${routeFolder}/${contentKey}_${normalizedLang}.md`);
+
+  try {
+    return await fs.promises.readFile(filePath, 'utf8');
+  } catch (_err) {
+    // Si no es troba el fitxer, generem un contingut de mostra dinàmic
+    const formattedTitle = contentKey.replace(/_/g, ' ').toUpperCase();
+    return `# ${formattedTitle}\n\n[Contingut del pas \`${contentKey}\` en desenvolupament per a l'idioma \`${normalizedLang}\`]\n\nPròximament afegirem els continguts complets per a la ruta de ${route === 'BUY' ? 'Compra' : 'Venda'}.`;
+  }
 };
 
 export const obtenerOInicializarProgreso = async (userId: string): Promise<IMentoringProgress> => {
