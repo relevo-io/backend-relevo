@@ -27,12 +27,25 @@ export const completeModule = asyncWrapper(async (req: AuthRequest, res: Respons
   res.status(200).json(progress);
 });
 
+export const toggleStep = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new UnauthorizedError('no autenticado');
+  }
+  const { contentKey } = req.body;
+  if (!contentKey) {
+    res.status(400).json({ error: 'Falta contentKey en el body' });
+    return;
+  }
+  const progress = await mentoringService.togglePasoCompletado(req.user.id, contentKey);
+  res.status(200).json(progress);
+});
+
 export const getMarkdownContent = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const { route, contentKey } = req.params;
   const lang = (req.query.lang as string) || req.headers['accept-language']?.split(',')[0].split('-')[0] || 'es';
 
   if (route !== 'BUY' && route !== 'SELL') {
-    res.status(400).json({ error: 'Ruta no vàlida (ha de ser BUY o SELL)' });
+    res.status(400).json({ error: 'Ruta no valida (tiene que ser BUY o SELL)' });
     return;
   }
 

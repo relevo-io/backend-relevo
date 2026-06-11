@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { MentoringModuleModel } from '../models/mentoringModuleModel.js';
+import { MentoringModuleModel, IMentoringItem } from '../models/mentoringModuleModel.js';
 import { IMentoringProgress, MentoringProgressModel } from '../models/mentoringProgressModel.js';
 import fs from 'fs';
 import path from 'path';
@@ -56,7 +56,14 @@ export const obtenerContenidoMarkdown = async (
 ): Promise<string> => {
   const normalizedLang = ['ca', 'es', 'en'].includes(lang) ? lang : 'es';
   const routeFolder = route === 'BUY' ? 'buyer' : 'seller';
-  const filePath = path.join(__dirname, `../assets/mentoring/${routeFolder}/${contentKey}_${normalizedLang}.md`);
+  const filePath = path.join(
+    process.cwd(),
+    'src',
+    'assets',
+    'mentoring',
+    routeFolder,
+    `${contentKey}_${normalizedLang}.md`
+  );
 
   try {
     return await fs.promises.readFile(filePath, 'utf8');
@@ -74,11 +81,65 @@ export const obtenerOInicializarProgreso = async (userId: string): Promise<IMent
     progress = await new MentoringProgressModel({
       userId: new Types.ObjectId(userId),
       completedModules: [],
+      completedSteps: [],
       progressPercentage: 0
     }).save();
+  } else if (!progress.completedSteps) {
+    progress.completedSteps = [];
+    await progress.save();
   }
 
   return progress;
+};
+
+export const togglePasoCompletado = async (userId: string, contentKey: string): Promise<IMentoringProgress> => {
+  let progress = await MentoringProgressModel.findOne({ userId });
+  if (!progress) {
+    progress = new MentoringProgressModel({
+      userId: new Types.ObjectId(userId),
+      completedModules: [],
+      completedSteps: [],
+      progressPercentage: 0
+    });
+  }
+
+  if (!progress.completedSteps) {
+    progress.completedSteps = [];
+  }
+
+  const index = progress.completedSteps.indexOf(contentKey);
+  if (index >= 0) {
+    progress.completedSteps.splice(index, 1);
+  } else {
+    progress.completedSteps.push(contentKey);
+  }
+
+  // Recalcular modulos completados y porcentaje total
+  const modulosActivos = await MentoringModuleModel.find({ isActive: true });
+  let totalSteps = 0;
+  let completedStepsCount = 0;
+  const completedModules: Types.ObjectId[] = [];
+
+  for (const mod of modulosActivos) {
+    const steps = (mod.items || []) as IMentoringItem[];
+    if (steps.length === 0) continue;
+
+    totalSteps += steps.length;
+
+    // Check if all steps of this module are completed
+    const allCompleted = steps.every((step) => progress.completedSteps.includes(step.contentKey));
+    if (allCompleted) {
+      completedModules.push(mod._id as Types.ObjectId);
+    }
+
+    // Count how many steps in this module are completed
+    completedStepsCount += steps.filter((step) => progress.completedSteps.includes(step.contentKey)).length;
+  }
+
+  progress.completedModules = completedModules;
+  progress.progressPercentage = totalSteps > 0 ? Math.round((completedStepsCount / totalSteps) * 100) : 100;
+
+  return await progress.save();
 };
 
 export const completarModulo = async (userId: string, moduleId: string): Promise<IMentoringProgress> => {
@@ -92,6 +153,7 @@ export const completarModulo = async (userId: string, moduleId: string): Promise
     progress = new MentoringProgressModel({
       userId: new Types.ObjectId(userId),
       completedModules: [],
+      completedSteps: [],
       progressPercentage: 0
     });
   }
@@ -101,14 +163,25 @@ export const completarModulo = async (userId: string, moduleId: string): Promise
 
   if (!jaCompletat) {
     progress.completedModules.push(moduloIdObj);
+    // Auto-complete all steps of this module
+    const steps = (modulo.items || []) as IMentoringItem[];
+    for (const step of steps) {
+      if (!progress.completedSteps.includes(step.contentKey)) {
+        progress.completedSteps.push(step.contentKey);
+      }
+    }
   }
 
-  const totalModulosActivos = await MentoringModuleModel.countDocuments({ isActive: true });
-  if (totalModulosActivos > 0) {
-    progress.progressPercentage = Math.round((progress.completedModules.length / totalModulosActivos) * 100);
-  } else {
-    progress.progressPercentage = 100;
+  const modulosActivos = await MentoringModuleModel.find({ isActive: true });
+  let totalSteps = 0;
+  let completedStepsCount = 0;
+  for (const mod of modulosActivos) {
+    const steps = (mod.items || []) as IMentoringItem[];
+    totalSteps += steps.length;
+    completedStepsCount += steps.filter((step) => progress.completedSteps.includes(step.contentKey)).length;
   }
+
+  progress.progressPercentage = totalSteps > 0 ? Math.round((completedStepsCount / totalSteps) * 100) : 100;
 
   return await progress.save();
 };

@@ -4,6 +4,7 @@ export interface IMentoringProgress {
   _id?: Types.ObjectId;
   userId: Types.ObjectId;
   completedModules: Types.ObjectId[];
+  completedSteps: string[];
   progressPercentage: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -21,6 +22,12 @@ const mentoringProgressSchema = new Schema<IMentoringProgress>(
       {
         type: Schema.Types.ObjectId,
         ref: 'MentoringModule'
+      }
+    ],
+    completedSteps: [
+      {
+        type: String,
+        default: []
       }
     ],
     progressPercentage: {
