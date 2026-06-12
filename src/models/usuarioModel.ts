@@ -93,6 +93,13 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           readOnly: true
  *           format: date-time
  */
+export interface INotificationPreferences {
+  newMessages: boolean;
+  applicationStatus: boolean;
+  newApplications: boolean;
+  cvAnalysis: boolean;
+}
+
 export interface IUsuario {
   _id?: Types.ObjectId;
   roles: Array<(typeof userRoles)[number]>;
@@ -110,6 +117,8 @@ export interface IUsuario {
   visible?: boolean;
   language?: string;
   theme?: string;
+  fcmTokens?: string[];
+  notificationPreferences?: INotificationPreferences;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -207,6 +216,16 @@ const usuarioSchema = new Schema<IUsuario>(
       type: String,
       enum: ['light', 'dark'],
       default: 'light'
+    },
+    notificationPreferences: {
+      newMessages: { type: Boolean, default: true },
+      applicationStatus: { type: Boolean, default: true },
+      newApplications: { type: Boolean, default: true },
+      cvAnalysis: { type: Boolean, default: true }
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
     }
   },
   {

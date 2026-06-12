@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { IUsuario } from '../models/usuarioModel.js';
+import { IUsuario, INotificationPreferences } from '../models/usuarioModel.js';
 import * as usuarioService from '../services/usuarioService.js';
 import {
   DeleteManyUsuariosBody,
@@ -7,7 +7,8 @@ import {
   UpdateUsuarioVisibilityBody
 } from '../validators/usuarioValidator.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError } from '../utils/AppError.js';
+import { NotFoundError, UnauthorizedError } from '../utils/AppError.js';
+import { AuthRequest } from '../middlewares/auth.js';
 
 export const getUsuarios = asyncWrapper(async (_req: Request, res: Response): Promise<void> => {
   const usuarios = await usuarioService.listarUsuarios();
@@ -87,3 +88,53 @@ export const patchManyUsuariosVisibility = asyncWrapper(
     });
   }
 );
+
+export const registerFcmToken = asyncWrapper(
+  async (req: Request<{}, {}, { token: string }>, res: Response): Promise<void> => {
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
+    const { token } = req.body;
+
+    await usuarioService.registrarFcmToken(userId, token);
+    res.status(200).json({ success: true, message: 'FCM Token registrado correctamente' });
+  }
+);
+
+export const unregisterFcmToken = asyncWrapper(
+  async (req: Request<{ token: string }>, res: Response): Promise<void> => {
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
+    const { token } = req.params;
+
+    await usuarioService.desregistrarFcmToken(userId, token);
+    res.status(200).json({ success: true, message: 'FCM Token eliminado correctamente' });
+  }
+);
+
+export const updateNotificationPreferences = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const { newMessages, applicationStatus, newApplications, cvAnalysis } = req.body;
+  const prefs: INotificationPreferences = {
+    newMessages,
+    applicationStatus,
+    newApplications,
+    cvAnalysis
+  };
+
+  const updatedUser = await usuarioService.actualizarPreferenciasNotificacion(userId, prefs);
+
+  if (!updatedUser) {
+    throw new NotFoundError('Usuario no encontrado');
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Preferencias de notificación actualizadas',
+    user: updatedUser
+  });
+});

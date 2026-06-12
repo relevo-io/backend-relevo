@@ -1,4 +1,4 @@
-import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
+import { IUsuario, UsuarioModel, INotificationPreferences } from '../models/usuarioModel.js';
 
 export const crearUsuario = async (data: Partial<IUsuario>): Promise<IUsuario> => {
   return await new UsuarioModel(data).save();
@@ -38,4 +38,27 @@ export const actualizarVisibilidadUsuarios = async (
 
 export const listarUsuarios = async (): Promise<IUsuario[]> => {
   return await UsuarioModel.find().select('-password').lean();
+};
+
+export const registrarFcmToken = async (id: string, token: string): Promise<void> => {
+  // Primero, removemos el token de cualquier otro usuario que lo tenga registrado para evitar duplicados en dispositivos compartidos
+  await UsuarioModel.updateMany({ fcmTokens: token, _id: { $ne: id } }, { $pull: { fcmTokens: token } });
+  await UsuarioModel.findByIdAndUpdate(id, { $addToSet: { fcmTokens: token } });
+};
+
+export const desregistrarFcmToken = async (id: string, token: string): Promise<void> => {
+  await UsuarioModel.findByIdAndUpdate(id, { $pull: { fcmTokens: token } });
+};
+
+export const actualizarPreferenciasNotificacion = async (
+  id: string,
+  prefs: INotificationPreferences
+): Promise<IUsuario | null> => {
+  return await UsuarioModel.findByIdAndUpdate(
+    id,
+    { $set: { notificationPreferences: prefs } },
+    { returnDocument: 'after' }
+  )
+    .select('-password')
+    .lean();
 };

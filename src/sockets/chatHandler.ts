@@ -3,6 +3,9 @@ import sanitizeHtml from 'sanitize-html';
 import * as chatService from '../services/chatService.js';
 import { logger } from '../config.js';
 import { IMensaje } from '../models/mensajeModel.js';
+import { createNotificationAndSendPush } from '../services/notificationService.js';
+import { IUsuario } from '../models/usuarioModel.js';
+import { NotificacionModel } from '../models/notificacionModel.js';
 
 // ─────────────────────────────────────────────
 //  Constants
@@ -171,6 +174,35 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
           message: mensajePopulated
         });
 
+        // Send Push notification using the secondary FCM app
+        try {
+          if (mensajePopulated) {
+            // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
+            const socketsInRoom = await io.in(roomName(chatId)).fetchSockets();
+            const isRecipientActiveInChat = socketsInRoom.some((s) => String(s.data.user?.id) === recipientId);
+
+            if (!isRecipientActiveInChat) {
+              const sender = mensajePopulated.sender as unknown as IUsuario;
+              const senderName = sender?.fullName || 'Un usuario';
+              await createNotificationAndSendPush(
+                recipientId,
+                `Nuevo mensaje de ${senderName}`,
+                content,
+                'chat',
+                {
+                  click_action: `/chats/${chatId}`,
+                  chatId: chatId
+                },
+                'newMessages'
+              );
+            } else {
+              logger.info('[Socket] Receptor %s está activo en la sala %s, omitiendo push', recipientId, chatId);
+            }
+          }
+        } catch (pushErr) {
+          logger.error({ pushErr }, '[Socket] FCM flow error in chatHandler');
+        }
+
         // Acknowledgement — frontend knows message hit the DB
         callback?.({ ok: true, message: mensajePopulated });
 
@@ -242,6 +274,12 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
 
       const resetUpdate = isOwner ? { unreadOwner: 0 } : { unreadInterested: 0 };
       await chatService.resetearContadorNoLeidos(chatId, resetUpdate);
+
+      // Marcar las notificaciones del chat como leídas en base de datos
+      await NotificacionModel.updateMany(
+        { userId, type: 'chat', 'metadata.chatId': chatId, read: false },
+        { $set: { read: true } }
+      );
     } catch (err) {
       logger.error({ err }, '[Socket] mark_read error');
     }

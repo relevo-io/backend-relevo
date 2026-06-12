@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { AlertaModel, IAlerta } from '../models/alertaModel.js';
-import { NotificacionModel } from '../models/notificacionModel.js';
 import { IOferta } from '../models/ofertaModel.js';
+import { createNotificationAndSendPush } from './notificationService.js';
 
 export const crearAlerta = async (userId: string, revenueRange: string): Promise<IAlerta> => {
   const existing = await AlertaModel.findOne({ userId: new Types.ObjectId(userId), revenueRange });
@@ -43,15 +43,16 @@ export const procesarAlertasParaOferta = async (oferta: IOferta): Promise<void> 
 
   if (alertas.length === 0) return;
 
-  const notificaciones = alertas.map((alerta) => ({
-    userId: alerta.userId,
-    type: 'NUEVA_OFERTA',
-    data: {
-      sector: oferta.sector,
-      offerId: (oferta._id as Types.ObjectId).toString()
-    },
-    isRead: false
-  }));
+  const promises = alertas.map((alerta) => {
+    const title = 'Nueva oferta disponible';
+    const body = `Se ha publicado una nueva oferta en el sector ${oferta.sector || ''} que coincide con tu alerta de facturación.`;
+    const metadata = {
+      sector: oferta.sector || '',
+      offerId: (oferta._id as Types.ObjectId).toString(),
+      click_action: `/ofertas/${(oferta._id as Types.ObjectId).toString()}`
+    };
+    return createNotificationAndSendPush(alerta.userId.toString(), title, body, 'alerta', metadata);
+  });
 
-  await NotificacionModel.insertMany(notificaciones);
+  await Promise.all(promises);
 };

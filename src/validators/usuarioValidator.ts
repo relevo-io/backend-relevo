@@ -102,9 +102,23 @@ export const updateManyUsuariosVisibilitySchema = z.object({
   visible: z.boolean()
 });
 
+export const fcmTokenSchema = z.object({
+  token: z.string().min(10, 'El token debe tener al menos 10 caracteres')
+});
+
+export const updateNotificationPreferencesSchema = z
+  .object({
+    newMessages: z.boolean(),
+    applicationStatus: z.boolean(),
+    newApplications: z.boolean(),
+    cvAnalysis: z.boolean()
+  })
+  .strict();
+
 export type CreateUsuarioBody = z.infer<typeof createUsuarioSchema>;
 export type UpdateUsuarioBody = z.infer<typeof updateUsuarioSchema>;
 export type DeleteManyUsuariosBody = z.infer<typeof deleteManyUsuariosSchema>;
 export type UsuarioIdParams = z.infer<typeof usuarioIdParamsSchema>;
 export type UpdateUsuarioVisibilityBody = z.infer<typeof updateUsuarioVisibilitySchema>;
 export type UpdateManyUsuariosVisibilityBody = z.infer<typeof updateManyUsuariosVisibilitySchema>;
+export type UpdateNotificationPreferencesBody = z.infer<typeof updateNotificationPreferencesSchema>;

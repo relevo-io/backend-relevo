@@ -9,7 +9,8 @@ import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError, AppE
 import { generarPresignedGet } from '../services/storageService.js';
 import { solicitarAnalisisIA } from '../services/aiService.js';
 import { logger } from '../config.js';
-import { UsuarioModel } from '../models/usuarioModel.js';
+import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
+import { createNotificationAndSendPush } from '../services/notificationService.js';
 
 const parsePagination = (page?: string, limit?: string) => {
   if (!page && !limit) return null;
@@ -109,6 +110,25 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
 
   const resultado = await solicitudService.obtenerSolicitudConDetalles(String(nueva._id));
 
+  // Enviar notificación push al propietario de la oferta
+  if (resultado) {
+    const ownerId = String(resultado.owner);
+    const candidate = resultado.interestedUser as unknown as IUsuario;
+    const candidateName = candidate?.fullName || 'Un usuario';
+
+    await createNotificationAndSendPush(
+      ownerId,
+      'Nueva solicitud',
+      `${candidateName} te ha solicitado en una oferta`,
+      'solicitud',
+      {
+        click_action: '/mis-solicitudes',
+        solicitudId: String(resultado._id)
+      },
+      'newApplications'
+    );
+  }
+
   res.status(201).json(resultado);
 });
 
@@ -137,6 +157,42 @@ export const patchEstadoSolicitud = asyncWrapper(
     const solicitudActualizada = await solicitudService.actualizarEstadoSolicitud(req.params.id, req.body.status);
     if (!solicitudActualizada) {
       throw new NotFoundError('Solicitud no encontrada');
+    }
+
+    // Enviar notificación push al candidato/interesado informando si fue aceptado o rechazado
+    if (req.body.status === 'ACCEPTED' || req.body.status === 'REJECTED') {
+      try {
+        const solicitudConDetalles = await solicitudService.obtenerSolicitudConDetalles(req.params.id);
+        if (solicitudConDetalles) {
+          const candidateId = String(solicitudConDetalles.interestedUser._id);
+          const ownerId = String(solicitudConDetalles.owner);
+
+          const owner = await UsuarioModel.findById(ownerId).select('fullName').lean();
+          const ownerName = owner?.fullName || 'El propietario';
+
+          const title = req.body.status === 'ACCEPTED' ? 'Solicitud aceptada' : 'Solicitud rechazada';
+
+          const bodyText =
+            req.body.status === 'ACCEPTED'
+              ? `${ownerName} te ha aceptado la solicitud`
+              : `${ownerName} te ha denegado la solicitud`;
+
+          await createNotificationAndSendPush(
+            candidateId,
+            title,
+            bodyText,
+            'solicitud',
+            {
+              click_action: '/mis-solicitudes',
+              solicitudId: String(solicitudConDetalles._id),
+              status: req.body.status
+            },
+            'applicationStatus'
+          );
+        }
+      } catch (err) {
+        logger.error(err, 'Error al enviar notificacion push de estado de solicitud');
+      }
     }
 
     res.status(200).json(solicitudActualizada);
@@ -250,6 +306,23 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
       estadoAnalisis: 'COMPLETADO',
       resultadoIa: resultado
     });
+
+    // Enviar notificación push al reclutador (el usuario que solicitó el análisis)
+    const solicitudConDetalles = await solicitudService.obtenerSolicitudConDetalles(solicitud._id!.toString());
+    const candidate = solicitudConDetalles?.interestedUser as unknown as IUsuario;
+    const candidateName = candidate?.fullName || 'un candidato';
+
+    await createNotificationAndSendPush(
+      userId,
+      'Análisis de CV completado',
+      `El análisis por IA del CV de ${candidateName} ha finalizado`,
+      'cv_analysis',
+      {
+        click_action: '/mis-solicitudes',
+        solicitudId: solicitud._id!.toString()
+      },
+      'cvAnalysis'
+    );
 
     res.status(200).json(solicitudActualizada);
   } catch (error) {
