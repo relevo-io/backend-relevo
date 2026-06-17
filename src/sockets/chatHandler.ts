@@ -106,19 +106,45 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
   );
 
   // ── send_message ─────────────────────────────
-  // Client emits: { chatId, content } + ack callback
+  // Client emits: { chatId, content, messageType, s3Key, fileName, fileSize, mimeType } + ack callback
   // Server: sanitize → persist → update Chat → broadcast → ack
   socket.on(
     'send_message',
     async (
-      payload: { chatId: string; content: string },
+      payload: {
+        chatId: string;
+        content?: string;
+        messageType?: 'text' | 'image' | 'file' | 'audio' | 'video';
+        s3Key?: string;
+        fileName?: string;
+        fileSize?: number;
+        mimeType?: string;
+      },
       callback?: (res: { ok: boolean; error?: string; message?: IMensaje | null }) => void
     ): Promise<void> => {
       try {
-        const { chatId, content: rawContent } = payload ?? {};
+        const {
+          chatId,
+          content: rawContent,
+          messageType = 'text',
+          s3Key,
+          fileName,
+          fileSize,
+          mimeType
+        } = payload ?? {};
 
-        if (!chatId || !rawContent) {
-          callback?.({ ok: false, error: 'chatId y content son requeridos' });
+        if (!chatId) {
+          callback?.({ ok: false, error: 'chatId es requerido' });
+          return;
+        }
+
+        if (!rawContent && !s3Key) {
+          callback?.({ ok: false, error: 'El contenido o archivo adjunto es requerido' });
+          return;
+        }
+
+        if (s3Key && !s3Key.startsWith('chats/')) {
+          callback?.({ ok: false, error: 'Acceso denegado: Clave de archivo inválida' });
           return;
         }
 
@@ -130,7 +156,7 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
         }
 
         if (chat.isReadOnly) {
-          callback?.({ ok: false, error: 'Este chat es de solo lectura' });
+          callback?.({ ok: false, error: 'Este xat es de solo lectura' });
           return;
         }
 
@@ -140,29 +166,63 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
           return;
         }
 
-        // Sanitize & validate length
-        const content = sanitizeContent(rawContent);
-        if (!content) {
+        // Sanitize and validate length of content if present
+        let content = '';
+        if (rawContent) {
+          content = sanitizeContent(rawContent);
+          if (content.length > MAX_MESSAGE_LENGTH) {
+            callback?.({ ok: false, error: `Máximo ${MAX_MESSAGE_LENGTH} caracteres` });
+            return;
+          }
+        }
+
+        if (!s3Key && !content) {
           callback?.({ ok: false, error: 'El mensaje no puede estar vacío' });
           return;
         }
-        if (content.length > MAX_MESSAGE_LENGTH) {
-          callback?.({ ok: false, error: `Máximo ${MAX_MESSAGE_LENGTH} caracteres` });
-          return;
+
+        // Build file metadata
+        const extraData: Partial<IMensaje> = {};
+        if (s3Key) {
+          extraData.messageType = messageType;
+          extraData.s3Key = s3Key;
+          extraData.fileName = fileName;
+          extraData.fileSize = fileSize;
+          extraData.mimeType = mimeType;
         }
 
         // Persist message
-        const mensaje = await chatService.guardarMensaje(chatId, userId, content);
+        const mensaje = await chatService.guardarMensaje(chatId, userId, content, extraData);
+
+        // Determine preview text for list and push
+        let previewContent = content;
+        if (s3Key) {
+          if (messageType === 'image') previewContent = '📷 Imagen';
+          else if (messageType === 'video') previewContent = '🎥 Video';
+          else if (messageType === 'audio') previewContent = '🎵 Audio';
+          else if (messageType === 'file') previewContent = `📄 ${fileName || 'Archivo'}`;
+        }
 
         // Determine which unread counter to increment
         const isOwner = String(chat.owner) === userId;
         const unreadUpdate = isOwner ? { unreadInterested: 1 } : { unreadOwner: 1 };
 
         // Update Chat: lastMessage cache + unread counter + updatedAt
-        await chatService.actualizarChatConNuevoMensaje(chatId, unreadUpdate, content, userId, mensaje.createdAt!);
+        await chatService.actualizarChatConNuevoMensaje(
+          chatId,
+          unreadUpdate,
+          previewContent,
+          userId,
+          mensaje.createdAt!
+        );
 
-        // Build response payload (populate sender info)
+        // Build response payload (populate sender info & generate temporary fileUrl)
         const mensajePopulated = await chatService.obtenerMensajePoblado(String(mensaje._id));
+
+        if (!mensajePopulated) {
+          callback?.({ ok: false, error: 'Error al procesar el mensaje guardado' });
+          return;
+        }
 
         // Broadcast to everyone in the room EXCEPT the sender
         socket.to(roomName(chatId)).emit('new_message', mensajePopulated);
@@ -176,34 +236,32 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
 
         // Send Push notification using the secondary FCM app
         try {
-          if (mensajePopulated) {
-            // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
-            const socketsInRoom = await io.in(roomName(chatId)).fetchSockets();
-            const isRecipientActiveInChat = socketsInRoom.some((s) => String(s.data.user?.id) === recipientId);
+          // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
+          const socketsInRoom = await io.in(roomName(chatId)).fetchSockets();
+          const isRecipientActiveInChat = socketsInRoom.some((s) => String(s.data.user?.id) === recipientId);
 
-            if (!isRecipientActiveInChat) {
-              const sender = mensajePopulated.sender as unknown as IUsuario;
-              const senderName = sender?.fullName || 'Un usuario';
-              await createNotificationAndSendPush(
-                recipientId,
-                `Nuevo mensaje de ${senderName}`,
-                content,
-                'chat',
-                {
-                  click_action: `/chats/${chatId}`,
-                  chatId: chatId
-                },
-                'newMessages'
-              );
-            } else {
-              logger.info('[Socket] Receptor %s está activo en la sala %s, omitiendo push', recipientId, chatId);
-            }
+          if (!isRecipientActiveInChat) {
+            const sender = mensajePopulated.sender as unknown as IUsuario;
+            const senderName = sender?.fullName || 'Un usuario';
+            await createNotificationAndSendPush(
+              recipientId,
+              `Nuevo mensaje de ${senderName}`,
+              previewContent,
+              'chat',
+              {
+                click_action: `/chats/${chatId}`,
+                chatId: chatId
+              },
+              'newMessages'
+            );
+          } else {
+            logger.info('[Socket] Receptor %s está activo en la sala %s, omitiendo push', recipientId, chatId);
           }
         } catch (pushErr) {
           logger.error({ pushErr }, '[Socket] FCM flow error in chatHandler');
         }
 
-        // Acknowledgement — frontend knows message hit the DB
+        // Acknowledgement — frontend knows message hit the DB (with dynamic fileUrl populated)
         callback?.({ ok: true, message: mensajePopulated });
 
         logger.info('[Socket] Message saved in chat %s by user %s', chatId, userId);

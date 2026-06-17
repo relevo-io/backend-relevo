@@ -21,10 +21,11 @@ const s3Client = new S3Client({
  */
 export const generarPresignedPut = async (
   originalFilename: string,
-  mimeType: string = 'application/pdf'
+  mimeType: string = 'application/pdf',
+  folder: 'cvs' | 'chats' = 'cvs'
 ): Promise<{ uploadUrl: string; s3Key: string }> => {
   const sanitized = originalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const s3Key = `cvs/${randomUUID()}-${sanitized}`;
+  const s3Key = `${folder}/${randomUUID()}-${sanitized}`;
 
   const command = new PutObjectCommand({
     Bucket: awsConfig.bucketName,
@@ -39,7 +40,7 @@ export const generarPresignedPut = async (
 
 /**
  * Generates a pre-signed URL for reading a file from S3 (GET).
- * Valid for 2 minutes.
+ * Valid for 1 minute.
  *
  * @param s3Key - The object key in the bucket
  * @returns The signed GET URL
@@ -50,5 +51,5 @@ export const generarPresignedGet = async (s3Key: string): Promise<string> => {
     Key: s3Key
   });
 
-  return await getSignedUrl(s3Client, command, { expiresIn: 120 }); // 2 min
+  return await getSignedUrl(s3Client, command, { expiresIn: 60 }); // 1 min
 };

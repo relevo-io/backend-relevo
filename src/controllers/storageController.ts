@@ -15,3 +15,15 @@ export const getPresignedUrl = asyncWrapper(async (req: AuthRequest, res: Respon
 
   res.status(200).json({ uploadUrl, s3Key });
 });
+
+/**
+ * GET /api/storage/chat-presigned-url
+ * Genera una Pre-signed URL de tipo PUT para subir un archivo del chat a S3.
+ */
+export const getChatPresignedUrl = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { filename, mimeType } = req.query as { filename: string; mimeType: string };
+
+  const { uploadUrl, s3Key } = await generarPresignedPut(filename.trim(), mimeType.trim(), 'chats');
+
+  res.status(200).json({ uploadUrl, s3Key });
+});
