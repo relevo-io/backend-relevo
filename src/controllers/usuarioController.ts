@@ -4,6 +4,7 @@ import * as usuarioService from '../services/usuarioService.js';
 import * as ratingService from '../services/ratingService.js';
 import {
   DeleteManyUsuariosBody,
+  UpdateMarketplacePreferencesBody,
   UpdateManyUsuariosVisibilityBody,
   UpdateUsuarioVisibilityBody
 } from '../validators/usuarioValidator.js';
@@ -150,4 +151,32 @@ export const getMyRatings = asyncWrapper(async (req: Request, res: Response): Pr
 
   const ratings = await ratingService.obtenerMisRatings(userId);
   res.status(200).json(ratings);
+});
+
+export const updateMarketplacePreferences = asyncWrapper(
+  async (req: Request<{}, {}, UpdateMarketplacePreferencesBody>, res: Response): Promise<void> => {
+    const authReq = req as AuthRequest;
+    const userId = authReq.user?.id;
+    if (!userId) {
+      throw new UnauthorizedError('No autenticado');
+    }
+
+    const usuario = await usuarioService.actualizarPreferenciasMarketplace(userId, req.body);
+    if (!usuario) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
+
+    res.status(200).json(usuario);
+  }
+);
+
+export const activateProPlan = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const usuario = await usuarioService.activarPlanPro(userId);
+  res.status(200).json(usuario);
 });

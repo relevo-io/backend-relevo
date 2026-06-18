@@ -4,6 +4,8 @@ import { SolicitudModel } from '../models/solicitudModel.js';
 import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 import { procesarAlertasParaOferta } from './alertaService.js';
 import { RatingSummary, obtenerResumenRating, obtenerResumenRatingsPorUsuarios } from './ratingService.js';
+import { ForbiddenError } from '../utils/AppError.js';
+import { isProActive, obtenerAccesoUsuario } from './usuarioService.js';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -33,7 +35,45 @@ export type OfertaConContadores = IOferta & {
   ownerRating?: RatingSummary;
 };
 
-const buildOfertaFilter = async (options?: { excludeOwnerId?: string; search?: string }) => {
+interface OfertaListOptions {
+  excludeOwnerId?: string;
+  search?: string;
+  sector?: string;
+  region?: string;
+  revenueRange?: string;
+  employeeRange?: string;
+  creationYearFrom?: number;
+  creationYearTo?: number;
+  viewerId?: string;
+}
+
+type UsuarioAccesoOferta = NonNullable<Awaited<ReturnType<typeof obtenerAccesoUsuario>>>;
+
+const hasAdvancedFilters = (options?: OfertaListOptions): boolean =>
+  Boolean(
+    options?.sector ||
+    options?.region ||
+    options?.revenueRange ||
+    options?.employeeRange ||
+    options?.creationYearFrom !== undefined ||
+    options?.creationYearTo !== undefined
+  );
+
+const assertAdvancedFiltersAllowed = (
+  options: OfertaListOptions | undefined,
+  viewer: UsuarioAccesoOferta | null
+): void => {
+  if (!hasAdvancedFilters(options)) {
+    return;
+  }
+
+  const isAdmin = viewer?.roles?.includes('ADMIN') ?? false;
+  if (!viewer || (!isAdmin && !isProActive(viewer))) {
+    throw new ForbiddenError('MONETIZATION.PRO_REQUIRED_FILTERS');
+  }
+};
+
+const buildOfertaFilter = async (options?: OfertaListOptions) => {
   const filter: Record<string, unknown> = {};
   if (options?.excludeOwnerId) {
     filter.owner = { $ne: options.excludeOwnerId };
@@ -52,6 +92,29 @@ const buildOfertaFilter = async (options?: { excludeOwnerId?: string; search?: s
       { employeeRange: regex },
       { owner: { $in: idsUsuarios } }
     ];
+  }
+
+  if (options?.sector?.trim()) {
+    filter.sector = new RegExp(`^${escapeRegex(options.sector.trim())}$`, 'i');
+  }
+
+  if (options?.region?.trim()) {
+    filter.region = new RegExp(escapeRegex(options.region.trim()), 'i');
+  }
+
+  if (options?.revenueRange) {
+    filter.revenueRange = options.revenueRange;
+  }
+
+  if (options?.employeeRange) {
+    filter.employeeRange = options.employeeRange;
+  }
+
+  if (options?.creationYearFrom !== undefined || options?.creationYearTo !== undefined) {
+    filter.creationYear = {
+      ...(options.creationYearFrom !== undefined ? { $gte: options.creationYearFrom } : {}),
+      ...(options.creationYearTo !== undefined ? { $lte: options.creationYearTo } : {})
+    };
   }
 
   return filter;
@@ -82,6 +145,75 @@ const addFavoriteCounts = async <T extends IOferta>(
     ...normalizeOferta(oferta),
     favoriteCount: countsMap.get(String(oferta._id)) ?? 0
   }));
+};
+
+const preferenceScoreForOferta = (oferta: IOferta, usuario: UsuarioAccesoOferta): number => {
+  let score = 0;
+
+  if (usuario.preferredRegions?.some((region) => region.trim().toLowerCase() === oferta.region.trim().toLowerCase())) {
+    score += 3;
+  }
+
+  if (usuario.preferredSectors?.some((sector) => sector.trim().toLowerCase() === oferta.sector.trim().toLowerCase())) {
+    score += 3;
+  }
+
+  if (oferta.employeeRange && usuario.preferredEmployeeRanges?.includes(oferta.employeeRange)) {
+    score += 2;
+  }
+
+  if (oferta.revenueRange && usuario.preferredRevenueRanges?.includes(oferta.revenueRange)) {
+    score += 2;
+  }
+
+  if (
+    oferta.creationYear &&
+    usuario.preferredCreationYearFrom !== undefined &&
+    usuario.preferredCreationYearTo !== undefined &&
+    oferta.creationYear >= usuario.preferredCreationYearFrom &&
+    oferta.creationYear <= usuario.preferredCreationYearTo
+  ) {
+    score += 1;
+  }
+
+  return score;
+};
+
+const hasMarketplacePreferences = (usuario: UsuarioAccesoOferta | null): usuario is UsuarioAccesoOferta =>
+  Boolean(
+    usuario &&
+    (usuario.preferredRegions?.length ||
+      usuario.preferredSectors?.length ||
+      usuario.preferredEmployeeRanges?.length ||
+      usuario.preferredRevenueRanges?.length ||
+      usuario.preferredCreationYearFrom !== undefined ||
+      usuario.preferredCreationYearTo !== undefined)
+  );
+
+const randomComparator = (): number => Math.random() - 0.5;
+
+const sortByNewest = <T extends IOferta>(items: T[]): T[] =>
+  [...items].sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+
+const sortOffersForViewer = <T extends OfertaConContadores>(
+  items: T[],
+  options?: OfertaListOptions,
+  viewer?: UsuarioAccesoOferta | null
+): T[] => {
+  const shouldApplyInitialSort = !options?.search?.trim() && !hasAdvancedFilters(options);
+  if (!shouldApplyInitialSort) {
+    return sortByNewest(items);
+  }
+
+  if (viewer && hasMarketplacePreferences(viewer)) {
+    return [...items].sort((a, b) => {
+      const scoreDiff = preferenceScoreForOferta(b, viewer) - preferenceScoreForOferta(a, viewer);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    });
+  }
+
+  return [...items].sort(randomComparator);
 };
 
 const getOwnerId = (oferta: IOferta): string | null => {
@@ -153,34 +285,37 @@ export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
   return await OfertaModel.findByIdAndDelete(id).lean();
 };
 
-export const listarOfertas = async (options?: { excludeOwnerId?: string; search?: string }): Promise<IOferta[]> => {
+export const listarOfertas = async (options?: OfertaListOptions): Promise<IOferta[]> => {
+  const viewer = options?.viewerId ? await obtenerAccesoUsuario(options.viewerId) : null;
+  assertAdvancedFiltersAllowed(options, viewer);
   const filter = await buildOfertaFilter(options);
   const ofertas = await OfertaModel.find(filter).lean();
-  return await addOwnerRatings(await addFavoriteCounts(ofertas));
+  return sortOffersForViewer(await addOwnerRatings(await addFavoriteCounts(ofertas)), options, viewer);
 };
 
 export const listarOfertasPaginadas = async (
   pagination: PaginationParams,
-  options?: { excludeOwnerId?: string; search?: string }
+  options?: OfertaListOptions
 ): Promise<PaginatedResult<IOferta>> => {
+  const viewer = options?.viewerId ? await obtenerAccesoUsuario(options.viewerId) : null;
+  assertAdvancedFiltersAllowed(options, viewer);
   const filter = await buildOfertaFilter(options);
   const page = Math.max(1, pagination.page);
   const limit = Math.max(1, pagination.limit);
   const skip = (page - 1) * limit;
 
   const [items, totalItems] = await Promise.all([
-    OfertaModel.find(filter)
-      .populate('owner', 'fullName email') // Añadido el populate aquí
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean() as Promise<IOferta[]>,
+    OfertaModel.find(filter).populate('owner', 'fullName email').lean() as Promise<IOferta[]>,
     OfertaModel.countDocuments(filter)
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-  const enrichedItems = await addOwnerRatings(await addFavoriteCounts(items));
+  const enrichedItems = sortOffersForViewer(
+    await addOwnerRatings(await addFavoriteCounts(items)),
+    options,
+    viewer
+  ).slice(skip, skip + limit);
 
   return {
     items: enrichedItems,
@@ -289,6 +424,19 @@ export const obtenerOfertasFavoritasPaginadas = async (
 };
 
 export const agregarOfertaAFavoritos = async (userId: string, ofertaId: string): Promise<void> => {
+  const usuario = await obtenerAccesoUsuario(userId);
+  if (!usuario) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  const favorites = usuario.favoriteOfferIds ?? [];
+  const alreadyFavorite = favorites.some((id) => String(id) === ofertaId);
+  const isAdmin = usuario.roles?.includes('ADMIN') ?? false;
+
+  if (!alreadyFavorite && !isAdmin && !isProActive(usuario) && favorites.length >= 3) {
+    throw new ForbiddenError('MONETIZATION.FAVORITES_LIMIT_REACHED');
+  }
+
   await UsuarioModel.findByIdAndUpdate(userId, { $addToSet: { favoriteOfferIds: ofertaId } });
 };
 

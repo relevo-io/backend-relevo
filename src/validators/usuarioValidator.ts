@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { authProviders, userRoles } from '../models/usuarioModel.js';
+import { employeeRanges, revenueRanges } from '../models/ofertaModel.js';
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
 const objectIdSchema = z.string().regex(objectIdRegex, 'El id debe tener formato ObjectId valido');
@@ -25,7 +26,53 @@ const preferredRegionsSchema = z.preprocess((value) => {
   return value;
 }, z.array(z.string().trim()).optional());
 
-const usuarioBaseSchema = z.object({
+const stringArraySchema = z.preprocess((value) => {
+  if (value === undefined || value === null) return undefined;
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+  }
+
+  return value;
+}, z.array(z.string().trim()).optional());
+
+const employeeRangesSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+    }
+    return value;
+  },
+  z.array(z.enum(employeeRanges)).optional()
+);
+
+const revenueRangesSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+    }
+    return value;
+  },
+  z.array(z.enum(revenueRanges)).optional()
+);
+
+const optionalYearSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  return value;
+}, z.coerce.number().int().min(1800).max(new Date().getFullYear()).optional());
+
+const usuarioBaseObjectSchema = z.object({
   roles: rolesSchema,
   fullName: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(120),
   email: z.string().trim().email('Email invalido'),
@@ -37,10 +84,35 @@ const usuarioBaseSchema = z.object({
   professionalBackground: z.string().max(2000).optional(),
   cv: z.string().trim().max(4000).optional(),
   preferredRegions: preferredRegionsSchema,
+  preferredSectors: stringArraySchema,
+  preferredEmployeeRanges: employeeRangesSchema,
+  preferredRevenueRanges: revenueRangesSchema,
+  preferredCreationYearFrom: optionalYearSchema,
+  preferredCreationYearTo: optionalYearSchema,
   visible: z.boolean().optional(),
   language: z.enum(['es', 'ca', 'en']).optional(),
   theme: z.enum(['light', 'dark']).optional()
 });
+
+const withYearRangeValidation = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.refine(
+    (data) => {
+      const typedData = data as {
+        preferredCreationYearFrom?: number;
+        preferredCreationYearTo?: number;
+      };
+
+      return (
+        typedData.preferredCreationYearFrom === undefined ||
+        typedData.preferredCreationYearTo === undefined ||
+        typedData.preferredCreationYearFrom <= typedData.preferredCreationYearTo
+      );
+    },
+    {
+      message: 'El ano de inicio no puede ser mayor que el ano de fin',
+      path: ['preferredCreationYearFrom']
+    }
+  );
 
 const withConditionalPassword = <T extends z.ZodTypeAny>(schema: T) =>
   schema.superRefine((data: z.infer<T>, ctx) => {
@@ -57,7 +129,7 @@ const withConditionalPassword = <T extends z.ZodTypeAny>(schema: T) =>
     }
   });
 
-export const createUsuarioSchema = withConditionalPassword(usuarioBaseSchema.strict());
+export const createUsuarioSchema = withConditionalPassword(withYearRangeValidation(usuarioBaseObjectSchema.strict()));
 
 const publicRolesSchema = z
   .array(z.enum(['OWNER', 'INTERESTED']))
@@ -68,22 +140,21 @@ const publicRolesSchema = z
   });
 
 export const createUsuarioPublicSchema = withConditionalPassword(
-  usuarioBaseSchema.extend({ roles: publicRolesSchema }).strict()
+  withYearRangeValidation(usuarioBaseObjectSchema.extend({ roles: publicRolesSchema }).strict())
 );
 
-export const updateUsuarioSchema = usuarioBaseSchema
-  .partial()
-  .strict()
-  .refine((data) => Object.keys(data).length > 0, {
+export const updateUsuarioSchema = withYearRangeValidation(usuarioBaseObjectSchema.partial().strict()).refine(
+  (data) => Object.keys(data).length > 0,
+  {
     message: 'Debes enviar al menos un campo para actualizar'
-  });
+  }
+);
 
-export const updateUsuarioSelfSchema = usuarioBaseSchema
-  .omit({ roles: true })
-  .partial()
-  .refine((data) => Object.keys(data).length > 0, {
-    message: 'Debes enviar al menos un campo para actualizar'
-  });
+export const updateUsuarioSelfSchema = withYearRangeValidation(
+  usuarioBaseObjectSchema.omit({ roles: true }).partial()
+).refine((data) => Object.keys(data).length > 0, {
+  message: 'Debes enviar al menos un campo para actualizar'
+});
 
 export const deleteManyUsuariosSchema = z.object({
   ids: z.array(objectIdSchema).min(1, 'Debes enviar al menos un id')
@@ -116,6 +187,30 @@ export const updateNotificationPreferencesSchema = z
   })
   .strict();
 
+export const updateMarketplacePreferencesSchema = z
+  .object({
+    preferredRegions: preferredRegionsSchema,
+    preferredSectors: stringArraySchema,
+    preferredEmployeeRanges: employeeRangesSchema,
+    preferredRevenueRanges: revenueRangesSchema,
+    preferredCreationYearFrom: optionalYearSchema,
+    preferredCreationYearTo: optionalYearSchema
+  })
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Debes enviar al menos una preferencia'
+  })
+  .refine(
+    (data) =>
+      data.preferredCreationYearFrom === undefined ||
+      data.preferredCreationYearTo === undefined ||
+      data.preferredCreationYearFrom <= data.preferredCreationYearTo,
+    {
+      message: 'El ano de inicio no puede ser mayor que el ano de fin',
+      path: ['preferredCreationYearFrom']
+    }
+  );
+
 export type CreateUsuarioBody = z.infer<typeof createUsuarioSchema>;
 export type UpdateUsuarioBody = z.infer<typeof updateUsuarioSchema>;
 export type DeleteManyUsuariosBody = z.infer<typeof deleteManyUsuariosSchema>;
@@ -123,3 +218,4 @@ export type UsuarioIdParams = z.infer<typeof usuarioIdParamsSchema>;
 export type UpdateUsuarioVisibilityBody = z.infer<typeof updateUsuarioVisibilitySchema>;
 export type UpdateManyUsuariosVisibilityBody = z.infer<typeof updateManyUsuariosVisibilitySchema>;
 export type UpdateNotificationPreferencesBody = z.infer<typeof updateNotificationPreferencesSchema>;
+export type UpdateMarketplacePreferencesBody = z.infer<typeof updateMarketplacePreferencesSchema>;

@@ -4,6 +4,7 @@ import { validate } from '../middlewares/validatorMiddleware.js';
 import {
   createUsuarioPublicSchema,
   deleteManyUsuariosSchema,
+  updateMarketplacePreferencesSchema,
   updateManyUsuariosVisibilitySchema,
   usuarioIdParamsSchema,
   updateUsuarioVisibilitySchema,
@@ -142,6 +143,21 @@ router.patch(
   authenticateToken,
   validate({ body: updateNotificationPreferencesSchema }),
   usuarioController.updateNotificationPreferences
+);
+
+router.patch(
+  '/me/marketplace-preferences',
+  authenticateToken,
+  authorizeRoles('INTERESTED', 'ADMIN'),
+  validate({ body: updateMarketplacePreferencesSchema }),
+  usuarioController.updateMarketplacePreferences
+);
+
+router.post(
+  '/me/pro/activate',
+  authenticateToken,
+  authorizeRoles('INTERESTED', 'ADMIN'),
+  usuarioController.activateProPlan
 );
 
 router.get('/me/ratings', authenticateToken, usuarioController.getMyRatings);

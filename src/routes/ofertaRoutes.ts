@@ -109,7 +109,7 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/', validate({ query: ofertaQuerySchema }), ofertaController.getOfertas);
+router.get('/', optionalAuthenticateToken, validate({ query: ofertaQuerySchema }), ofertaController.getOfertas);
 
 /**
  * @openapi
@@ -131,6 +131,12 @@ router.get(
   ofertaController.getMisOfertasAnalyticsSummary
 );
 router.get('/favorites', authenticateToken, ofertaController.getMisFavoritas);
+router.post(
+  '/publication-credit/purchase',
+  authenticateToken,
+  authorizeRoles('OWNER', 'ADMIN'),
+  ofertaController.purchasePublicationCredit
+);
 router.post(
   '/:id/favorite',
   authenticateToken,

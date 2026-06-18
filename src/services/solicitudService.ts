@@ -1,6 +1,8 @@
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
 import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 import { obtenerResumenRatingsPorUsuarios } from './ratingService.js';
+import { ForbiddenError } from '../utils/AppError.js';
+import { isProActive, obtenerAccesoUsuario } from './usuarioService.js';
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -52,6 +54,24 @@ export const crearSolicitud = async (data: Partial<ISolicitud>): Promise<ISolici
 
   if (yaExiste) {
     throw new Error('Solicitud ya existente para esta oferta');
+  }
+
+  const interestedUserId = data.interestedUser ? String(data.interestedUser) : null;
+  if (interestedUserId) {
+    const usuario = await obtenerAccesoUsuario(interestedUserId);
+    const isAdmin = usuario?.roles?.includes('ADMIN') ?? false;
+
+    if (usuario && !isAdmin && !isProActive(usuario)) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentRequestsCount = await SolicitudModel.countDocuments({
+        interestedUser: data.interestedUser,
+        createdAt: { $gte: sevenDaysAgo }
+      });
+
+      if (recentRequestsCount >= 1) {
+        throw new ForbiddenError('MONETIZATION.REQUESTS_LIMIT_REACHED');
+      }
+    }
   }
 
   return await new SolicitudModel(data).save();

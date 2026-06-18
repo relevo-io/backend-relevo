@@ -6,6 +6,49 @@ import * as usuarioService from '../services/usuarioService.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { UnauthorizedError, NotFoundError } from '../utils/AppError.js';
 
+const serializeAuthUser = (usuario: {
+  _id?: unknown;
+  fullName?: string;
+  email?: string;
+  roles?: string[];
+  language?: string;
+  theme?: string;
+  authProvider?: string;
+  notificationPreferences?: unknown;
+  preferredRegions?: string[];
+  preferredSectors?: string[];
+  preferredEmployeeRanges?: string[];
+  preferredRevenueRanges?: string[];
+  preferredCreationYearFrom?: number;
+  preferredCreationYearTo?: number;
+  publicationCredits?: number;
+  proExpiresAt?: Date | null;
+  proActive?: boolean;
+}) => {
+  const proExpiresAt = usuario.proExpiresAt ?? null;
+  const proActive = usuario.proActive ?? (proExpiresAt ? new Date(proExpiresAt).getTime() > Date.now() : false);
+
+  return {
+    _id: usuario._id,
+    fullName: usuario.fullName,
+    email: usuario.email,
+    roles: usuario.roles,
+    language: usuario.language,
+    theme: usuario.theme,
+    authProvider: usuario.authProvider,
+    notificationPreferences: usuario.notificationPreferences,
+    preferredRegions: usuario.preferredRegions,
+    preferredSectors: usuario.preferredSectors,
+    preferredEmployeeRanges: usuario.preferredEmployeeRanges,
+    preferredRevenueRanges: usuario.preferredRevenueRanges,
+    preferredCreationYearFrom: usuario.preferredCreationYearFrom,
+    preferredCreationYearTo: usuario.preferredCreationYearTo,
+    publicationCredits: usuario.publicationCredits ?? 0,
+    proExpiresAt,
+    proActive
+  };
+};
+
 export const login = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   const { email, password } = req.body;
 
@@ -25,15 +68,7 @@ export const login = asyncWrapper(async (req: Request, res: Response, _next: Nex
   res.status(200).json({
     message: 'Login exitoso',
     accessToken,
-    usuario: {
-      _id: usuario._id,
-      fullName: usuario.fullName,
-      email: usuario.email,
-      roles: usuario.roles,
-      language: usuario.language,
-      theme: usuario.theme,
-      notificationPreferences: usuario.notificationPreferences
-    }
+    usuario: serializeAuthUser(usuario)
   });
 });
 
@@ -59,15 +94,7 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, _ne
     res.status(200).json({
       message: 'Token refrescado',
       accessToken,
-      usuario: {
-        _id: usuario._id,
-        fullName: usuario.fullName,
-        email: usuario.email,
-        roles: usuario.roles,
-        language: usuario.language,
-        theme: usuario.theme,
-        notificationPreferences: usuario.notificationPreferences
-      }
+      usuario: serializeAuthUser(usuario)
     });
   } catch (_error) {
     throw new UnauthorizedError('ERRORS.AUTH.REFRESH_TOKEN_INVALID');
@@ -108,15 +135,6 @@ export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) =>
     message: 'Login Firebase exitoso',
     accessToken,
     isNewUser,
-    usuario: {
-      _id: usuario._id,
-      fullName: usuario.fullName,
-      email: usuario.email,
-      roles: usuario.roles,
-      language: usuario.language,
-      theme: usuario.theme,
-      authProvider: usuario.authProvider,
-      notificationPreferences: usuario.notificationPreferences
-    }
+    usuario: serializeAuthUser(usuario)
   });
 });
