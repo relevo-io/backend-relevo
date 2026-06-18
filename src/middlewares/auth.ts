@@ -37,6 +37,22 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+export const optionalAuthenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    req.user = verifyAccessToken(token);
+    next();
+  } catch (_err: unknown) {
+    next();
+  }
+};
+
 export const authorizeRoles = (
   ...allowedRoles: Array<'OWNER' | 'INTERESTED' | 'ADMIN'>
 ): ((req: AuthRequest, res: Response, next: NextFunction) => void) => {

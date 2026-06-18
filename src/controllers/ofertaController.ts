@@ -4,7 +4,7 @@ import { IOferta } from '../models/ofertaModel.js';
 import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError, UnauthorizedError } from '../utils/AppError.js';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/AppError.js';
 import { logger } from '../config.js';
 
 const parsePagination = (page?: string, limit?: string) => {
@@ -12,6 +12,14 @@ const parsePagination = (page?: string, limit?: string) => {
   const parsedPage = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
   const parsedLimit = Math.max(1, Number.parseInt(limit ?? '12', 10) || 12);
   return { page: parsedPage, limit: parsedLimit };
+};
+
+const extractOwnerId = (owner: unknown): string => {
+  if (typeof owner === 'object' && owner !== null && '_id' in owner) {
+    return String((owner as { _id: unknown })._id);
+  }
+
+  return String(owner);
 };
 
 export const getOfertas = asyncWrapper(
@@ -44,6 +52,15 @@ export const getOferta = asyncWrapper(async (req: Request<{ id: string }>, res: 
   }
 
   res.status(200).json(oferta);
+});
+
+export const registerOfertaView = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const oferta = await ofertaService.registrarVistaOferta(req.params.id, req.user);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  res.status(200).json({ detailViewCount: oferta.detailViewCount ?? 0 });
 });
 
 export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
@@ -116,6 +133,37 @@ export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response
   res.status(200).json(ofertas);
 });
 
+export const getOfertaAnalytics = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const oferta = await ofertaService.obtenerOfertaPorId(req.params.id);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  const isAdmin = req.user?.roles.includes('ADMIN');
+  const ownerId = extractOwnerId(oferta.owner);
+  if (!isAdmin && ownerId !== userId) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  const analytics = await ofertaService.obtenerAnalyticsOferta(req.params.id);
+  res.status(200).json(analytics);
+});
+
+export const getMisOfertasAnalyticsSummary = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const summary = await ofertaService.obtenerAnalyticsResumenOwner(userId);
+  res.status(200).json(summary);
+});
+
 export const getMisFavoritas = asyncWrapper(async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   if (!userId) {
@@ -148,7 +196,8 @@ export const addOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: Resp
   }
 
   await ofertaService.agregarOfertaAFavoritos(userId, req.params.id);
-  res.status(200).json({ message: 'Oferta agregada a favoritos' });
+  const favoriteCount = await ofertaService.contarFavoritosOferta(req.params.id);
+  res.status(200).json({ message: 'Oferta agregada a favoritos', favoriteCount });
 });
 
 export const removeOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: Response) => {
@@ -158,5 +207,6 @@ export const removeOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: R
   }
 
   await ofertaService.quitarOfertaDeFavoritos(userId, req.params.id);
-  res.status(200).json({ message: 'Oferta eliminada de favoritos' });
+  const favoriteCount = await ofertaService.contarFavoritosOferta(req.params.id);
+  res.status(200).json({ message: 'Oferta eliminada de favoritos', favoriteCount });
 });
