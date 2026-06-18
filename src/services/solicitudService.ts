@@ -1,5 +1,48 @@
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
 import { PaginatedResult, PaginationParams } from '../models/pagination.js';
+import { obtenerResumenRatingsPorUsuarios } from './ratingService.js';
+
+const getUserId = (user: unknown): string | null => {
+  if (!user) return null;
+  if (typeof user === 'object' && '_id' in user) return String((user as { _id: unknown })._id);
+  return String(user);
+};
+
+const addInterestedRatings = async <T extends ISolicitud>(items: T[]): Promise<T[]> => {
+  const userIds = [
+    ...new Set(items.map((item) => getUserId(item.interestedUser)).filter((id): id is string => Boolean(id)))
+  ];
+  const ratings = await obtenerResumenRatingsPorUsuarios(userIds, 'INTERESTED');
+
+  return items.map((item) => {
+    const userId = getUserId(item.interestedUser);
+    const interestedUser =
+      typeof item.interestedUser === 'object'
+        ? {
+            ...(item.interestedUser as object),
+            ratingAsInterested: userId ? (ratings.get(userId) ?? { average: 0, count: 0 }) : { average: 0, count: 0 }
+          }
+        : item.interestedUser;
+    return { ...item, interestedUser } as T;
+  });
+};
+
+const addOwnerRatings = async <T extends ISolicitud>(items: T[]): Promise<T[]> => {
+  const userIds = [...new Set(items.map((item) => getUserId(item.owner)).filter((id): id is string => Boolean(id)))];
+  const ratings = await obtenerResumenRatingsPorUsuarios(userIds, 'OWNER');
+
+  return items.map((item) => {
+    const userId = getUserId(item.owner);
+    const owner =
+      typeof item.owner === 'object'
+        ? {
+            ...(item.owner as object),
+            ratingAsOwner: userId ? (ratings.get(userId) ?? { average: 0, count: 0 }) : { average: 0, count: 0 }
+          }
+        : item.owner;
+    return { ...item, owner } as T;
+  });
+};
 
 export const crearSolicitud = async (data: Partial<ISolicitud>): Promise<ISolicitud> => {
   const yaExiste = await SolicitudModel.findOne({
@@ -70,12 +113,13 @@ export const listarSolicitudesPaginadas = async (
 };
 
 export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise<ISolicitud[]> => {
-  return await SolicitudModel.find({ owner: ownerId })
+  const items = await SolicitudModel.find({ owner: ownerId })
     .populate('interestedUser', 'fullName email bio professionalBackground cv')
     .populate('opportunity', 'companyDescription sector region')
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+  return await addInterestedRatings(items);
 };
 
 export const obtenerSolicitudesPorPropietarioPaginadas = async (
@@ -102,7 +146,7 @@ export const obtenerSolicitudesPorPropietarioPaginadas = async (
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   return {
-    items,
+    items: await addInterestedRatings(items),
     pagination: {
       page,
       limit,
@@ -115,13 +159,14 @@ export const obtenerSolicitudesPorPropietarioPaginadas = async (
 };
 
 export const obtenerSolicitudesPorInteresado = async (userId: string): Promise<ISolicitud[]> => {
-  return await SolicitudModel.find({ interestedUser: userId })
+  const items = await SolicitudModel.find({ interestedUser: userId })
     .populate('interestedUser', 'fullName email')
     .populate('owner', 'fullName email')
     .populate('opportunity', 'companyDescription sector region')
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+  return await addOwnerRatings(items);
 };
 
 export const obtenerSolicitudesPorInteresadoPaginadas = async (
@@ -149,7 +194,7 @@ export const obtenerSolicitudesPorInteresadoPaginadas = async (
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   return {
-    items,
+    items: await addOwnerRatings(items),
     pagination: {
       page,
       limit,

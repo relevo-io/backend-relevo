@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { IUsuario, INotificationPreferences } from '../models/usuarioModel.js';
 import * as usuarioService from '../services/usuarioService.js';
+import * as ratingService from '../services/ratingService.js';
 import {
   DeleteManyUsuariosBody,
   UpdateManyUsuariosVisibilityBody,
@@ -137,4 +138,15 @@ export const updateNotificationPreferences = asyncWrapper(async (req: Request, r
     message: 'Preferencias de notificación actualizadas',
     user: updatedUser
   });
+});
+
+export const getMyRatings = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const ratings = await ratingService.obtenerMisRatings(userId);
+  res.status(200).json(ratings);
 });

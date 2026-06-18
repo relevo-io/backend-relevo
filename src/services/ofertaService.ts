@@ -3,6 +3,7 @@ import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
 import { SolicitudModel } from '../models/solicitudModel.js';
 import { PaginatedResult, PaginationParams } from '../models/pagination.js';
 import { procesarAlertasParaOferta } from './alertaService.js';
+import { RatingSummary, obtenerResumenRating, obtenerResumenRatingsPorUsuarios } from './ratingService.js';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -29,6 +30,7 @@ export interface OwnerAnalyticsSummary {
 export type OfertaConContadores = IOferta & {
   favoriteCount: number;
   detailViewCount: number;
+  ownerRating?: RatingSummary;
 };
 
 const buildOfertaFilter = async (options?: { excludeOwnerId?: string; search?: string }) => {
@@ -82,6 +84,27 @@ const addFavoriteCounts = async <T extends IOferta>(
   }));
 };
 
+const getOwnerId = (oferta: IOferta): string | null => {
+  const owner = oferta.owner as unknown as string | { _id?: string };
+  if (!owner) return null;
+  return typeof owner === 'object' ? String(owner._id) : String(owner);
+};
+
+const addOwnerRatings = async <T extends IOferta>(
+  ofertas: Array<T & { favoriteCount: number; detailViewCount: number }>
+): Promise<Array<T & { favoriteCount: number; detailViewCount: number; ownerRating: RatingSummary }>> => {
+  const ownerIds = [...new Set(ofertas.map(getOwnerId).filter((id): id is string => Boolean(id)))];
+  const ratings = await obtenerResumenRatingsPorUsuarios(ownerIds, 'OWNER');
+
+  return ofertas.map((oferta) => {
+    const ownerId = getOwnerId(oferta);
+    return {
+      ...oferta,
+      ownerRating: ownerId ? (ratings.get(ownerId) ?? { average: 0, count: 0 }) : { average: 0, count: 0 }
+    };
+  });
+};
+
 const buildAnalyticsFromOferta = async (oferta: IOferta): Promise<OfertaAnalytics> => {
   const [favoriteCount, requestsByStatus] = await Promise.all([
     UsuarioModel.countDocuments({ favoriteOfferIds: oferta._id }),
@@ -116,7 +139,10 @@ export const crearOferta = async (data: Partial<IOferta>): Promise<IOferta> => {
 
 export const obtenerOfertaPorId = async (id: string): Promise<IOferta | null> => {
   const oferta = (await OfertaModel.findById(id).populate('owner', 'fullName email').lean()) as IOferta | null;
-  return oferta ? normalizeOferta(oferta) : null;
+  if (!oferta) return null;
+  const ownerId = getOwnerId(oferta);
+  const ownerRating = ownerId ? await obtenerResumenRating(ownerId, 'OWNER') : { average: 0, count: 0 };
+  return { ...normalizeOferta(oferta), ownerRating } as IOferta;
 };
 
 export const actualizarOferta = async (id: string, data: Partial<IOferta>): Promise<IOferta | null> => {
@@ -130,7 +156,7 @@ export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
 export const listarOfertas = async (options?: { excludeOwnerId?: string; search?: string }): Promise<IOferta[]> => {
   const filter = await buildOfertaFilter(options);
   const ofertas = await OfertaModel.find(filter).lean();
-  return await addFavoriteCounts(ofertas);
+  return await addOwnerRatings(await addFavoriteCounts(ofertas));
 };
 
 export const listarOfertasPaginadas = async (
@@ -154,7 +180,7 @@ export const listarOfertasPaginadas = async (
 
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-  const enrichedItems = await addFavoriteCounts(items);
+  const enrichedItems = await addOwnerRatings(await addFavoriteCounts(items));
 
   return {
     items: enrichedItems,
@@ -171,7 +197,7 @@ export const listarOfertasPaginadas = async (
 
 export const obtenerOfertasPorOwner = async (ownerId: string): Promise<IOferta[]> => {
   const ofertas = await OfertaModel.find({ owner: ownerId }).sort({ createdAt: -1 }).lean();
-  return await addFavoriteCounts(ofertas);
+  return await addOwnerRatings(await addFavoriteCounts(ofertas));
 };
 
 export const obtenerOfertasPorOwnerPaginadas = async (
@@ -190,7 +216,7 @@ export const obtenerOfertasPorOwnerPaginadas = async (
 
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-  const enrichedItems = await addFavoriteCounts(items);
+  const enrichedItems = await addOwnerRatings(await addFavoriteCounts(items));
 
   return {
     items: enrichedItems,
@@ -213,7 +239,7 @@ export const obtenerOfertasFavoritas = async (userId: string): Promise<IOferta[]
   const ofertas = await OfertaModel.find({ _id: { $in: ids } })
     .sort({ createdAt: -1 })
     .lean();
-  return await addFavoriteCounts(ofertas);
+  return await addOwnerRatings(await addFavoriteCounts(ofertas));
 };
 
 export const obtenerOfertasFavoritasPaginadas = async (
@@ -247,7 +273,7 @@ export const obtenerOfertasFavoritasPaginadas = async (
   ]);
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
-  const enrichedItems = await addFavoriteCounts(items);
+  const enrichedItems = await addOwnerRatings(await addFavoriteCounts(items));
 
   return {
     items: enrichedItems,

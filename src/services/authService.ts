@@ -54,6 +54,7 @@ export const loginWithFirebaseToken = async (idToken: string) => {
     throw new ValidationError('No se pudo obtener email del proveedor OAuth');
   }
 
+  let isNewUser = false;
   let usuario = await UsuarioModel.findOne({ authProvider, providerId });
   if (!usuario) {
     usuario = await UsuarioModel.findOne({ email });
@@ -68,6 +69,7 @@ export const loginWithFirebaseToken = async (idToken: string) => {
       providerId,
       password: null
     });
+    isNewUser = true;
   } else {
     const hasOwnerRole = usuario.roles?.includes('OWNER') ?? false;
     const hasInterestedRole = usuario.roles?.includes('INTERESTED') ?? false;
@@ -85,5 +87,5 @@ export const loginWithFirebaseToken = async (idToken: string) => {
   }
 
   const tokens = getTokens(usuario);
-  return { ...tokens, usuario };
+  return { ...tokens, usuario, isNewUser };
 };

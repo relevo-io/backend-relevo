@@ -144,6 +144,8 @@ router.patch(
   usuarioController.updateNotificationPreferences
 );
 
+router.get('/me/ratings', authenticateToken, usuarioController.getMyRatings);
+
 /**
  * @openapi
  * /api/usuarios/{id}:

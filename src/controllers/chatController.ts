@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.js';
 import * as chatService from '../services/chatService.js';
+import * as ratingService from '../services/ratingService.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotificacionModel } from '../models/notificacionModel.js';
@@ -159,4 +160,52 @@ export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Respo
   const updated = await chatService.actualizarEstadoChat(chatId, status);
 
   res.status(200).json(updated);
+});
+
+// ─────────────────────────────────────────────
+//  POST /api/chats/:chatId/close
+//  Marca la venta como cerrada por el participante actual.
+// ─────────────────────────────────────────────
+export const closeDeal = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+
+  const chat = await chatService.obtenerChatBasicoPorId(chatId);
+  if (!chat) {
+    throw new NotFoundError('Chat no encontrado');
+  }
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  const isAdmin = req.user!.roles.includes('ADMIN');
+  if (!isOwner && !isInterested && !isAdmin) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  const updated = await chatService.cerrarVentaChat(chatId, userId);
+  if (!updated) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  res.status(200).json(updated);
+});
+
+export const getMyChatRating = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const rating = await ratingService.obtenerMiRatingDeChat(chatId, userId);
+  res.status(200).json({ rating });
+});
+
+export const rateChat = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const { score, comment } = req.body;
+
+  if (typeof score !== 'number') {
+    throw new ValidationError('La valoracion es requerida');
+  }
+
+  const rating = await ratingService.valorarChat(chatId, userId, score, comment);
+  res.status(200).json(rating);
 });

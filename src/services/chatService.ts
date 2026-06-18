@@ -33,6 +33,8 @@ export const crearOObtenerChat = async (
       unreadOwner: number;
       unreadInterested: number;
       isReadOnly: boolean;
+      closedByOwner: boolean;
+      closedByInterested: boolean;
       status?: ChatStatus;
     };
   } = {
@@ -42,7 +44,9 @@ export const crearOObtenerChat = async (
       interested: new Types.ObjectId(interestedId),
       unreadOwner: 0,
       unreadInterested: 0,
-      isReadOnly: false
+      isReadOnly: false,
+      closedByOwner: false,
+      closedByInterested: false
     }
   };
 
@@ -106,7 +110,9 @@ export const obtenerMensajesPorChat = async (chatId: string, limit: number, befo
 };
 
 export const obtenerChatBasicoPorId = async (chatId: string): Promise<Partial<IChat> | null> => {
-  return await ChatModel.findById(chatId).select('owner interested isReadOnly status').lean();
+  return await ChatModel.findById(chatId)
+    .select('owner interested isReadOnly status closedByOwner closedByInterested closedAt')
+    .lean();
 };
 
 export const resetearContadorNoLeidos = async (chatId: string, resetField: Record<string, unknown>): Promise<void> => {
@@ -121,6 +127,33 @@ export const actualizarEstadoChat = async (chatId: string, status: string): Prom
   return await ChatModel.findByIdAndUpdate(chatId, { $set: { status } }, { new: true }).populate(
     'owner interested oferta'
   );
+};
+
+export const cerrarVentaChat = async (chatId: string, userId: string): Promise<IChat | null> => {
+  const chat = await ChatModel.findById(chatId).select('owner interested closedByOwner closedByInterested').lean();
+  if (!chat) return null;
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  if (!isOwner && !isInterested) return null;
+
+  const closedByOwner = isOwner ? true : Boolean(chat.closedByOwner);
+  const closedByInterested = isInterested ? true : Boolean(chat.closedByInterested);
+  const setFields: Partial<IChat> = {
+    closedByOwner,
+    closedByInterested
+  };
+
+  if (closedByOwner && closedByInterested) {
+    setFields.closedAt = new Date();
+    setFields.isReadOnly = true;
+  }
+
+  return await ChatModel.findByIdAndUpdate(chatId, { $set: setFields }, { new: true, runValidators: true })
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .lean();
 };
 
 export const guardarMensaje = async (

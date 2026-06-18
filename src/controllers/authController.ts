@@ -97,7 +97,7 @@ export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) =>
     throw new UnauthorizedError('idToken requerido');
   }
 
-  const { accessToken, refreshToken, usuario } = await authService.loginWithFirebaseToken(idToken);
+  const { accessToken, refreshToken, usuario, isNewUser } = await authService.loginWithFirebaseToken(idToken);
 
   res.cookie(config.cookies.refreshName, refreshToken, {
     ...config.cookies.options,
@@ -107,6 +107,7 @@ export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) =>
   res.status(200).json({
     message: 'Login Firebase exitoso',
     accessToken,
+    isNewUser,
     usuario: {
       _id: usuario._id,
       fullName: usuario.fullName,

@@ -81,6 +81,11 @@ export interface IOferta {
   companyDescription: string;
   extendedDescription?: string;
   detailViewCount?: number;
+  favoriteCount?: number;
+  ownerRating?: {
+    average: number;
+    count: number;
+  };
   publishedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
