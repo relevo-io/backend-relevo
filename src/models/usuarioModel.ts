@@ -98,6 +98,7 @@ export interface INotificationPreferences {
   applicationStatus: boolean;
   newApplications: boolean;
   cvAnalysis: boolean;
+  offerAlerts: boolean;
 }
 
 export interface IUsuario {
@@ -221,7 +222,8 @@ const usuarioSchema = new Schema<IUsuario>(
       newMessages: { type: Boolean, default: true },
       applicationStatus: { type: Boolean, default: true },
       newApplications: { type: Boolean, default: true },
-      cvAnalysis: { type: Boolean, default: true }
+      cvAnalysis: { type: Boolean, default: true },
+      offerAlerts: { type: Boolean, default: true }
     },
     fcmTokens: {
       type: [String],

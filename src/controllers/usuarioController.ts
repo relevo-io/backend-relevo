@@ -119,12 +119,13 @@ export const updateNotificationPreferences = asyncWrapper(async (req: Request, r
     throw new UnauthorizedError('No autenticado');
   }
 
-  const { newMessages, applicationStatus, newApplications, cvAnalysis } = req.body;
+  const { newMessages, applicationStatus, newApplications, cvAnalysis, offerAlerts } = req.body;
   const prefs: INotificationPreferences = {
     newMessages,
     applicationStatus,
     newApplications,
-    cvAnalysis
+    cvAnalysis,
+    offerAlerts
   };
 
   const updatedUser = await usuarioService.actualizarPreferenciasNotificacion(userId, prefs);

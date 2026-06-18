@@ -8,8 +8,7 @@ export const createAlert = asyncWrapper(async (req: AuthRequest, res: Response):
   if (!req.user?.id) {
     throw new UnauthorizedError('no autenticado');
   }
-  const { revenueRange } = req.body;
-  const alert = await alertaService.crearAlerta(req.user.id, revenueRange);
+  const alert = await alertaService.crearAlerta(req.user.id, req.body);
   res.status(201).json(alert);
 });
 

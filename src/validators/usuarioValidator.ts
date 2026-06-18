@@ -111,7 +111,8 @@ export const updateNotificationPreferencesSchema = z
     newMessages: z.boolean(),
     applicationStatus: z.boolean(),
     newApplications: z.boolean(),
-    cvAnalysis: z.boolean()
+    cvAnalysis: z.boolean(),
+    offerAlerts: z.boolean()
   })
   .strict();
 

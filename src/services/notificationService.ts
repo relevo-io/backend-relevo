@@ -22,7 +22,7 @@ export const createNotificationAndSendPush = async (
   body: string,
   type: 'chat' | 'solicitud' | 'cv_analysis' | 'alerta',
   metadata?: Record<string, string>,
-  preferenceKey?: 'newMessages' | 'applicationStatus' | 'newApplications' | 'cvAnalysis',
+  preferenceKey?: 'newMessages' | 'applicationStatus' | 'newApplications' | 'cvAnalysis' | 'offerAlerts',
   skipPush: boolean = false
 ): Promise<void> => {
   try {
