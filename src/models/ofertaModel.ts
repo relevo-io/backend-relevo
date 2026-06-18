@@ -76,6 +76,8 @@ export interface IOferta {
   sector: string;
   revenueRange?: (typeof revenueRanges)[number];
   owner: Types.ObjectId;
+  detailViewCount?: number;
+  favoriteCount?: number;
   creationYear?: number;
   employeeRange?: (typeof employeeRanges)[number];
   companyDescription: string;
@@ -106,6 +108,12 @@ const ofertaSchema = new Schema<IOferta>(
       type: Schema.Types.ObjectId,
       ref: 'Usuario',
       required: true
+    },
+    detailViewCount: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0
     },
     creationYear: {
       type: Number,

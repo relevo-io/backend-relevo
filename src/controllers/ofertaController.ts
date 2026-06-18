@@ -4,7 +4,7 @@ import { IOferta } from '../models/ofertaModel.js';
 import * as ofertaService from '../services/ofertaService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { NotFoundError, UnauthorizedError } from '../utils/AppError.js';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/AppError.js';
 import { logger } from '../config.js';
 
 const parsePagination = (page?: string, limit?: string) => {
@@ -12,6 +12,16 @@ const parsePagination = (page?: string, limit?: string) => {
   const parsedPage = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
   const parsedLimit = Math.max(1, Number.parseInt(limit ?? '12', 10) || 12);
   return { page: parsedPage, limit: parsedLimit };
+};
+
+const extractOwnerId = (owner: unknown): string | null => {
+  if (!owner) return null;
+  if (owner instanceof Types.ObjectId) return owner.toString();
+  if (typeof owner === 'string') return owner;
+  if (typeof owner === 'object' && owner !== null && '_id' in owner) {
+    return String((owner as { _id: unknown })._id);
+  }
+  return null;
 };
 
 export const getOfertas = asyncWrapper(
@@ -114,6 +124,49 @@ export const getMisOfertas = asyncWrapper(async (req: AuthRequest, res: Response
 
   const ofertas = await ofertaService.obtenerOfertasPorOwner(userId);
   res.status(200).json(ofertas);
+});
+
+export const registerOfertaView = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const oferta = await ofertaService.registrarVistaDetalle(req.params.id, req.user);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  res.status(200).json({ detailViewCount: oferta.detailViewCount ?? 0 });
+});
+
+export const getOfertaAnalytics = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const oferta = await ofertaService.obtenerOfertaPorId(req.params.id);
+  if (!oferta) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  const isAdmin = req.user.roles.includes('ADMIN');
+  const isOwner = extractOwnerId(oferta.owner) === req.user.id;
+  if (!isAdmin && !isOwner) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  const analytics = await ofertaService.obtenerAnaliticaOferta(req.params.id);
+  if (!analytics) {
+    throw new NotFoundError('Oferta no encontrada');
+  }
+
+  res.status(200).json(analytics);
+});
+
+export const getMisOfertasAnalyticsSummary = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const summary = await ofertaService.obtenerResumenAnaliticaOwner(userId);
+  res.status(200).json(summary);
 });
 
 export const getMisFavoritas = asyncWrapper(async (req: AuthRequest, res: Response) => {

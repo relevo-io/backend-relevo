@@ -7,7 +7,12 @@ import {
   ofertaQuerySchema,
   updateOfertaSchema
 } from '../validators/ofertaValidator.js';
-import { authenticateToken, authorizeOfertaOwnerOrAdmin, authorizeRoles } from '../middlewares/auth.js';
+import {
+  authenticateToken,
+  authorizeOfertaOwnerOrAdmin,
+  authorizeRoles,
+  optionalAuthenticateToken
+} from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -119,6 +124,12 @@ router.get('/', validate({ query: ofertaQuerySchema }), ofertaController.getOfer
  *         description: Llista d'ofertes pròpies recuperada correctament
  */
 router.get('/me', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), ofertaController.getMisOfertas);
+router.get(
+  '/me/analytics-summary',
+  authenticateToken,
+  authorizeRoles('OWNER', 'ADMIN'),
+  ofertaController.getMisOfertasAnalyticsSummary
+);
 router.get('/favorites', authenticateToken, ofertaController.getMisFavoritas);
 router.post(
   '/:id/favorite',
@@ -131,6 +142,18 @@ router.delete(
   authenticateToken,
   validate({ params: ofertaIdParamsSchema }),
   ofertaController.removeOfertaFavorita
+);
+router.post(
+  '/:id/view',
+  optionalAuthenticateToken,
+  validate({ params: ofertaIdParamsSchema }),
+  ofertaController.registerOfertaView
+);
+router.get(
+  '/:id/analytics',
+  authenticateToken,
+  validate({ params: ofertaIdParamsSchema }),
+  ofertaController.getOfertaAnalytics
 );
 
 /**

@@ -1,0 +1,84 @@
+
+> ea-exercise-restapi@3.0 dev
+> tsx --watch src/index.ts
+
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+[16:15:44 UTC] [32mINFO[39m: [36mConnected to MongoDB[39m
+[16:15:44 UTC] [32mINFO[39m: [36m[Socket] Socket.io server initialized[39m
+[16:15:44 UTC] [32mINFO[39m: [36m🚀 Server running on port 4000[39m
+[16:15:44 UTC] [32mINFO[39m: [36m⚡ Socket.io ready[39m
+[16:15:50 UTC] [32mINFO[39m: [36m--> GET /ping[39m
+[16:15:50 UTC] [32mINFO[39m: [36m<-- GET /ping 200 (5ms)[39m
+[16:16:04 UTC] [32mINFO[39m: [36m--> GET /ping[39m
+[16:16:04 UTC] [32mINFO[39m: [36m<-- GET /ping 200 (2ms)[39m
+[16:18:54 UTC] [32mINFO[39m: [36m--> GET /api/ofertas?page=1&limit=12[39m
+[16:18:54 UTC] [32mINFO[39m: [36mVALIDATOR: entrada[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+    [35mbody[39m: {}
+    [35mparams[39m: {}
+    [35mquery[39m: {
+      "page": "1",
+      "limit": "12"
+    }
+[16:18:54 UTC] [32mINFO[39m: [36mVALIDATOR: OK[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+[16:18:54 UTC] [32mINFO[39m: [36m<-- GET /?page=1&limit=12 200 (115ms)[39m
+[16:19:18 UTC] [32mINFO[39m: [36m--> GET /api/ofertas?page=1&limit=12[39m
+[16:19:18 UTC] [32mINFO[39m: [36mVALIDATOR: entrada[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+    [35mbody[39m: {}
+    [35mparams[39m: {}
+    [35mquery[39m: {
+      "page": "1",
+      "limit": "12"
+    }
+[16:19:18 UTC] [32mINFO[39m: [36mVALIDATOR: OK[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+[16:19:18 UTC] [32mINFO[39m: [36m<-- GET /?page=1&limit=12 200 (6ms)[39m
+[16:19:20 UTC] [32mINFO[39m: [36m--> GET /api/ofertas?page=1&limit=12[39m
+[16:19:20 UTC] [32mINFO[39m: [36mVALIDATOR: entrada[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+    [35mbody[39m: {}
+    [35mparams[39m: {}
+    [35mquery[39m: {
+      "page": "1",
+      "limit": "12"
+    }
+[16:19:20 UTC] [32mINFO[39m: [36mVALIDATOR: OK[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+[16:19:20 UTC] [32mINFO[39m: [36m<-- GET /?page=1&limit=12 200 (5ms)[39m
+[16:19:20 UTC] [32mINFO[39m: [36m--> GET /api/ofertas?page=1&limit=12[39m
+[16:19:20 UTC] [32mINFO[39m: [36mVALIDATOR: entrada[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+    [35mbody[39m: {}
+    [35mparams[39m: {}
+    [35mquery[39m: {
+      "page": "1",
+      "limit": "12"
+    }
+[16:19:20 UTC] [32mINFO[39m: [36mVALIDATOR: OK[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+[16:19:20 UTC] [32mINFO[39m: [36m<-- GET /?page=1&limit=12 200 (7ms)[39m
+[16:19:22 UTC] [32mINFO[39m: [36m--> GET /api/ofertas?page=1&limit=12[39m
+[16:19:22 UTC] [32mINFO[39m: [36mVALIDATOR: entrada[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+    [35mbody[39m: {}
+    [35mparams[39m: {}
+    [35mquery[39m: {
+      "page": "1",
+      "limit": "12"
+    }
+[16:19:22 UTC] [32mINFO[39m: [36mVALIDATOR: OK[39m
+    [35mmethod[39m: "GET"
+    [35mpath[39m: "/api/ofertas?page=1&limit=12"
+[16:19:22 UTC] [32mINFO[39m: [36m<-- GET /?page=1&limit=12 200 (5ms)[39m
+Failed running 'src/index.ts'. Waiting for file changes before restarting...
