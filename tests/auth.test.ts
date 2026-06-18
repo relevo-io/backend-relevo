@@ -13,11 +13,68 @@ describe('Auth & User Registration Flow', () => {
     language: 'ca'
   };
 
-  it('should register a new user', async () => {
+  it('should register a new user and assign both OWNER and INTERESTED roles', async () => {
     const response = await request(app).post('/api/usuarios').send(newTestUser);
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('email', newTestUser.email);
+    expect(response.body.roles).toEqual(['OWNER', 'INTERESTED']);
+  });
+
+  it('should register a new user and ignore single OWNER request, assigning both roles', async () => {
+    const response = await request(app)
+      .post('/api/usuarios')
+      .send({
+        fullName: 'Owner User',
+        email: 'owneruser@example.com',
+        password: 'password123',
+        roles: ['OWNER'],
+        location: 'Valencia'
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.roles).toEqual(['OWNER', 'INTERESTED']);
+  });
+
+  it('should register a new user with both roles directly', async () => {
+    const response = await request(app)
+      .post('/api/usuarios')
+      .send({
+        fullName: 'Dual User',
+        email: 'dualuser@example.com',
+        password: 'password123',
+        roles: ['OWNER', 'INTERESTED'],
+        location: 'Valencia'
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.roles).toEqual(['OWNER', 'INTERESTED']);
+  });
+
+  it('should reject registration if roles contains ADMIN', async () => {
+    const response = await request(app)
+      .post('/api/usuarios')
+      .send({
+        fullName: 'Malicious Admin Attempt',
+        email: 'adminattempt@example.com',
+        password: 'password123',
+        roles: ['ADMIN'],
+        location: 'Valencia'
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('should reject registration if roles is empty', async () => {
+    const response = await request(app).post('/api/usuarios').send({
+      fullName: 'Empty Roles Attempt',
+      email: 'emptyattempt@example.com',
+      password: 'password123',
+      roles: [],
+      location: 'Valencia'
+    });
+
+    expect(response.status).toBe(400);
   });
 
   it('should login with the seeded test user', async () => {

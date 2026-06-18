@@ -1,9 +1,10 @@
-import { Schema, model, Types } from 'mongoose';
+import mongoose, { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 import { config } from '../config.js';
 
 export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
+export const authProviders = ['local', 'google', 'github'] as const;
 
 const SALT_ROUNDS = config.bcryptSaltRounds;
 
@@ -92,12 +93,23 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           readOnly: true
  *           format: date-time
  */
+export interface INotificationPreferences {
+  newMessages: boolean;
+  applicationStatus: boolean;
+  newApplications: boolean;
+  cvAnalysis: boolean;
+  offerAlerts: boolean;
+}
+
 export interface IUsuario {
   _id?: Types.ObjectId;
   roles: Array<(typeof userRoles)[number]>;
   fullName: string;
   email: string;
-  password: string;
+  password?: string | null;
+  authProvider?: (typeof authProviders)[number];
+  providerId?: string | null;
+  favoriteOfferIds?: Types.ObjectId[];
   location?: string;
   bio?: string;
   professionalBackground?: string;
@@ -106,6 +118,8 @@ export interface IUsuario {
   visible?: boolean;
   language?: string;
   theme?: string;
+  fcmTokens?: string[];
+  notificationPreferences?: INotificationPreferences;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -143,8 +157,23 @@ const usuarioSchema = new Schema<IUsuario>(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: 6
+    },
+    authProvider: {
+      type: String,
+      enum: authProviders,
+      default: 'local',
+      required: true
+    },
+    providerId: {
+      type: String,
+      default: null,
+      sparse: true
+    },
+    favoriteOfferIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Oferta' }],
+      default: []
     },
     location: {
       type: String,
@@ -188,6 +217,17 @@ const usuarioSchema = new Schema<IUsuario>(
       type: String,
       enum: ['light', 'dark'],
       default: 'light'
+    },
+    notificationPreferences: {
+      newMessages: { type: Boolean, default: true },
+      applicationStatus: { type: Boolean, default: true },
+      newApplications: { type: Boolean, default: true },
+      cvAnalysis: { type: Boolean, default: true },
+      offerAlerts: { type: Boolean, default: true }
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
     }
   },
   {
@@ -196,14 +236,27 @@ const usuarioSchema = new Schema<IUsuario>(
 );
 
 usuarioSchema.pre('save', async function () {
+  if (this.authProvider === 'local' && !this.password) {
+    throw new Error('El password es obligatorio para cuentas locales');
+  }
+
+  if (this.authProvider !== 'local' && !this.password) {
+    this.password = null;
+    return;
+  }
+
   if (!this.isModified('password')) {
+    return;
+  }
+
+  if (!this.password) {
     return;
   }
 
   this.password = await hashPassword(this.password);
 });
 
-usuarioSchema.pre('findOneAndUpdate', async function () {
+usuarioSchema.pre('findOneAndUpdate', async function (this: mongoose.Query<unknown, IUsuario>): Promise<void> {
   const update = this.getUpdate();
   if (!update || Array.isArray(update)) {
     return;
@@ -229,5 +282,10 @@ usuarioSchema.pre('findOneAndUpdate', async function () {
 
   typedUpdate.password = hashedPassword;
 });
+
+usuarioSchema.index(
+  { authProvider: 1, providerId: 1 },
+  { unique: true, partialFilterExpression: { providerId: { $type: 'string' } } }
+);
 
 export const UsuarioModel = model<IUsuario>('Usuario', usuarioSchema);

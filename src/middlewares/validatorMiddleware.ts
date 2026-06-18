@@ -14,7 +14,7 @@ type ValidationSchemas = {
  * Valida de forma opcional body, params y query.
  */
 export const validate =
-  (schemas: ValidationSchemas) =>
+  (schemas: ValidationSchemas): ((req: Request, res: Response, next: NextFunction) => void) =>
   (req: Request, res: Response, next: NextFunction): void => {
     try {
       logger.info(

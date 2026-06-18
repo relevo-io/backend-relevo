@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { UsuarioModel, IUsuario } from './models/usuarioModel.js';
 import { OfertaModel, IOferta } from './models/ofertaModel.js';
 import { SolicitudModel } from './models/solicitudModel.js';
+import { MentoringModuleModel, IMentoringModule } from './models/mentoringModuleModel.js';
+import { MentoringProgressModel } from './models/mentoringProgressModel.js';
 import { config, logger } from './config.js';
 
 export async function setupDatabase(): Promise<void> {
@@ -11,6 +13,50 @@ export async function setupDatabase(): Promise<void> {
     }
     mongoose.set('strictQuery', true);
     await mongoose.connect(config.mongoUri);
+    try {
+      const indexes = await UsuarioModel.collection.indexes();
+      const providerIndex = indexes.find((index) => index.name === 'authProvider_1_providerId_1');
+      const partialFilter = providerIndex?.partialFilterExpression as
+        | { providerId?: { $exists?: boolean; $type?: string } }
+        | undefined;
+
+      if (partialFilter?.providerId?.$exists === true) {
+        await UsuarioModel.collection.dropIndex('authProvider_1_providerId_1');
+        logger.info('Dropped outdated usuario OAuth provider index');
+      }
+    } catch (err) {
+      const mongoError = err as { codeName?: string; code?: number };
+      if (
+        mongoError.codeName !== 'IndexNotFound' &&
+        mongoError.code !== 27 &&
+        mongoError.codeName !== 'NamespaceNotFound' &&
+        mongoError.code !== 26
+      ) {
+        throw err;
+      }
+    }
+
+    try {
+      const mentoringIndexes = await MentoringModuleModel.collection.indexes();
+      const orderIndex = mentoringIndexes.find((index) => index.name === 'order_1');
+      if (orderIndex) {
+        await MentoringModuleModel.collection.dropIndex('order_1');
+        logger.info('Dropped outdated mentoring order index');
+      }
+    } catch (err) {
+      const mongoError = err as { codeName?: string; code?: number };
+      if (
+        mongoError.codeName !== 'IndexNotFound' &&
+        mongoError.code !== 27 &&
+        mongoError.codeName !== 'NamespaceNotFound' &&
+        mongoError.code !== 26
+      ) {
+        throw err;
+      }
+    }
+
+    await UsuarioModel.syncIndexes();
+    await MentoringModuleModel.syncIndexes();
     logger.info('Connected to MongoDB');
   } catch (err) {
     logger.error(err, 'Database connection failed');
@@ -24,6 +70,8 @@ export async function seedingDatabase(): Promise<void> {
     await UsuarioModel.deleteMany({});
     await OfertaModel.deleteMany({});
     await SolicitudModel.deleteMany({});
+    await MentoringModuleModel.deleteMany({});
+    await MentoringProgressModel.deleteMany({});
 
     logger.info('Seeding final data for Relevo Demo...');
 
@@ -152,8 +200,263 @@ export async function seedingDatabase(): Promise<void> {
       }
     ];
 
-    await OfertaModel.insertMany(ofertasData);
-    logger.info('Database ready: %d professional offers created.', ofertasData.length);
+    const dynamicRegions = ['Barcelona', 'Madrid', 'Valencia', 'Sevilla', 'Bilbao', 'Malaga', 'Zaragoza', 'Alicante'];
+    const dynamicSectors = [
+      'Technology',
+      'Healthcare',
+      'Hospitality',
+      'Retail',
+      'Manufacturing',
+      'Logistics',
+      'Education',
+      'Services'
+    ];
+    const dynamicRevenues: IOferta['revenueRange'][] = [
+      'UNDER_100K',
+      'BETWEEN_100K_500K',
+      'BETWEEN_500K_1M',
+      'BETWEEN_1M_5M',
+      'OVER_5M'
+    ];
+    const dynamicEmployees: IOferta['employeeRange'][] = ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS'];
+    const ownersPool = createdUsers.filter((u) => u.roles.includes('OWNER'));
+
+    const EXTRA_OFFERS_COUNT = 200;
+    const generatedOffers: IOferta[] = Array.from({ length: EXTRA_OFFERS_COUNT }, (_, index) => {
+      const owner = ownersPool[index % ownersPool.length]!;
+      const sector = dynamicSectors[index % dynamicSectors.length]!;
+      const region = dynamicRegions[index % dynamicRegions.length]!;
+      const revenueRange = dynamicRevenues[index % dynamicRevenues.length];
+      const employeeRange = dynamicEmployees[index % dynamicEmployees.length];
+      const creationYear = 1998 + (index % 27);
+      const offerNumber = index + 1;
+
+      return {
+        region,
+        sector,
+        revenueRange,
+        owner: owner._id as mongoose.Types.ObjectId,
+        creationYear,
+        employeeRange,
+        companyDescription: `${sector} business opportunity #${offerNumber} in ${region}.`,
+        extendedDescription:
+          `Seeded offer ${offerNumber} for pagination testing. ` +
+          `Includes stable operations, recurring revenue, and transition support.`
+      };
+    });
+
+    const allOffers = [...ofertasData, ...generatedOffers];
+    await OfertaModel.insertMany(allOffers);
+    logger.info(
+      'Database ready: %d professional offers created (%d base + %d generated).',
+      allOffers.length,
+      ofertasData.length,
+      generatedOffers.length
+    );
+
+    const mentoringModulesData: IMentoringModule[] = [
+      // === RUTA VENEDOR (SELL) ===
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m1.title',
+        descriptionKey: 'mentoring.seller.m1.description',
+        order: 1,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m1.i1.title',
+            contentKey: 'sell_m1_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m2.title',
+        descriptionKey: 'mentoring.seller.m2.description',
+        order: 2,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m2.i1.title',
+            contentKey: 'sell_m2_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m3.title',
+        descriptionKey: 'mentoring.seller.m3.description',
+        order: 3,
+        duration: 25,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m3.i1.title',
+            contentKey: 'sell_m3_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m4.title',
+        descriptionKey: 'mentoring.seller.m4.description',
+        order: 4,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m4.i1.title',
+            contentKey: 'sell_m4_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m5.title',
+        descriptionKey: 'mentoring.seller.m5.description',
+        order: 5,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m5.i1.title',
+            contentKey: 'sell_m5_i1'
+          }
+        ]
+      },
+      {
+        route: 'SELL',
+        titleKey: 'mentoring.seller.m6.title',
+        descriptionKey: 'mentoring.seller.m6.description',
+        order: 6,
+        duration: 30,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.seller.m6.i1.title',
+            contentKey: 'sell_m6_i1'
+          }
+        ]
+      },
+
+      // === RUTA COMPRADOR (BUY) ===
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m1.title',
+        descriptionKey: 'mentoring.buyer.m1.description',
+        order: 1,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m1.i1.title',
+            contentKey: 'buy_m1_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m2.title',
+        descriptionKey: 'mentoring.buyer.m2.description',
+        order: 2,
+        duration: 15,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m2.i1.title',
+            contentKey: 'buy_m2_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m3.title',
+        descriptionKey: 'mentoring.buyer.m3.description',
+        order: 3,
+        duration: 25,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m3.i1.title',
+            contentKey: 'buy_m3_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m4.title',
+        descriptionKey: 'mentoring.buyer.m4.description',
+        order: 4,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m4.i1.title',
+            contentKey: 'buy_m4_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m5.title',
+        descriptionKey: 'mentoring.buyer.m5.description',
+        order: 5,
+        duration: 20,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m5.i1.title',
+            contentKey: 'buy_m5_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m6.title',
+        descriptionKey: 'mentoring.buyer.m6.description',
+        order: 6,
+        duration: 30,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m6.i1.title',
+            contentKey: 'buy_m6_i1'
+          }
+        ]
+      },
+      {
+        route: 'BUY',
+        titleKey: 'mentoring.buyer.m7.title',
+        descriptionKey: 'mentoring.buyer.m7.description',
+        order: 7,
+        duration: 25,
+        isActive: true,
+        items: [
+          {
+            type: 'tip',
+            titleKey: 'mentoring.buyer.m7.i1.title',
+            contentKey: 'buy_m7_i1'
+          }
+        ]
+      }
+    ];
+
+    await MentoringModuleModel.insertMany(mentoringModulesData);
+    logger.info('Database ready: %d mentoring modules created.', mentoringModulesData.length);
   } catch (err) {
     logger.error(err, 'Seeding failed');
     throw err;

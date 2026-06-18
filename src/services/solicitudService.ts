@@ -1,4 +1,48 @@
 import { ISolicitud, SolicitudModel } from '../models/solicitudModel.js';
+import { PaginatedResult, PaginationParams } from '../models/pagination.js';
+import { obtenerResumenRatingsPorUsuarios } from './ratingService.js';
+
+const getUserId = (user: unknown): string | null => {
+  if (!user) return null;
+  if (typeof user === 'object' && '_id' in user) return String((user as { _id: unknown })._id);
+  return String(user);
+};
+
+const addInterestedRatings = async <T extends ISolicitud>(items: T[]): Promise<T[]> => {
+  const userIds = [
+    ...new Set(items.map((item) => getUserId(item.interestedUser)).filter((id): id is string => Boolean(id)))
+  ];
+  const ratings = await obtenerResumenRatingsPorUsuarios(userIds, 'INTERESTED');
+
+  return items.map((item) => {
+    const userId = getUserId(item.interestedUser);
+    const interestedUser =
+      typeof item.interestedUser === 'object'
+        ? {
+            ...(item.interestedUser as object),
+            ratingAsInterested: userId ? (ratings.get(userId) ?? { average: 0, count: 0 }) : { average: 0, count: 0 }
+          }
+        : item.interestedUser;
+    return { ...item, interestedUser } as T;
+  });
+};
+
+const addOwnerRatings = async <T extends ISolicitud>(items: T[]): Promise<T[]> => {
+  const userIds = [...new Set(items.map((item) => getUserId(item.owner)).filter((id): id is string => Boolean(id)))];
+  const ratings = await obtenerResumenRatingsPorUsuarios(userIds, 'OWNER');
+
+  return items.map((item) => {
+    const userId = getUserId(item.owner);
+    const owner =
+      typeof item.owner === 'object'
+        ? {
+            ...(item.owner as object),
+            ratingAsOwner: userId ? (ratings.get(userId) ?? { average: 0, count: 0 }) : { average: 0, count: 0 }
+          }
+        : item.owner;
+    return { ...item, owner } as T;
+  });
+};
 
 export const crearSolicitud = async (data: Partial<ISolicitud>): Promise<ISolicitud> => {
   const yaExiste = await SolicitudModel.findOne({
@@ -34,23 +78,132 @@ export const listarSolicitudes = async (): Promise<ISolicitud[]> => {
     .exec();
 };
 
+export const listarSolicitudesPaginadas = async (
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find()
+      .populate('interestedUser', 'fullName email')
+      .populate('opportunity', 'companyDescription')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments()
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
+};
+
 export const obtenerSolicitudesPorPropietario = async (ownerId: string): Promise<ISolicitud[]> => {
-  return await SolicitudModel.find({ owner: ownerId })
+  const items = await SolicitudModel.find({ owner: ownerId })
     .populate('interestedUser', 'fullName email bio professionalBackground cv')
     .populate('opportunity', 'companyDescription sector region')
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+  return await addInterestedRatings(items);
+};
+
+export const obtenerSolicitudesPorPropietarioPaginadas = async (
+  ownerId: string,
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+  const filter = { owner: ownerId };
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find(filter)
+      .populate('interestedUser', 'fullName email bio professionalBackground cv')
+      .populate('opportunity', 'companyDescription sector region')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items: await addInterestedRatings(items),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
 };
 
 export const obtenerSolicitudesPorInteresado = async (userId: string): Promise<ISolicitud[]> => {
-  return await SolicitudModel.find({ interestedUser: userId })
+  const items = await SolicitudModel.find({ interestedUser: userId })
     .populate('interestedUser', 'fullName email')
     .populate('owner', 'fullName email')
     .populate('opportunity', 'companyDescription sector region')
     .sort({ createdAt: -1 })
     .lean()
     .exec();
+  return await addOwnerRatings(items);
+};
+
+export const obtenerSolicitudesPorInteresadoPaginadas = async (
+  userId: string,
+  pagination: PaginationParams
+): Promise<PaginatedResult<ISolicitud>> => {
+  const page = Math.max(1, pagination.page);
+  const limit = Math.max(1, pagination.limit);
+  const skip = (page - 1) * limit;
+  const filter = { interestedUser: userId };
+
+  const [items, totalItems] = await Promise.all([
+    SolicitudModel.find(filter)
+      .populate('interestedUser', 'fullName email')
+      .populate('owner', 'fullName email')
+      .populate('opportunity', 'companyDescription sector region')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    SolicitudModel.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
+  return {
+    items: await addOwnerRatings(items),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
 };
 
 export const actualizarEstadoSolicitud = async (

@@ -38,13 +38,22 @@ import { Schema, model, Types } from 'mongoose';
 //  INTERFACES
 // ─────────────────────────────────────────────
 
+export const MESSAGE_TYPES = ['text', 'image', 'file', 'audio', 'video'] as const;
+export type MessageType = (typeof MESSAGE_TYPES)[number];
+
 export interface IMensaje {
   _id?: Types.ObjectId;
   chat: Types.ObjectId;
   sender: Types.ObjectId;
-  content: string; // Contenido ya sanitizado (XSS-safe)
+  content: string; // Contenido ya sanitizado (XSS-safe). Opcional si hay archivo
+  messageType?: MessageType;
+  s3Key?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  fileUrl?: string; // Virtual dinámico para la URL pre-firmada de lectura (GET)
 }
 
 // ─────────────────────────────────────────────
@@ -65,9 +74,29 @@ const mensajeSchema = new Schema<IMensaje>(
     },
     content: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       maxlength: 2000
+    },
+    messageType: {
+      type: String,
+      enum: MESSAGE_TYPES,
+      default: 'text'
+    },
+    s3Key: {
+      type: String,
+      trim: true
+    },
+    fileName: {
+      type: String,
+      trim: true
+    },
+    fileSize: {
+      type: Number
+    },
+    mimeType: {
+      type: String,
+      trim: true
     }
   },
   {

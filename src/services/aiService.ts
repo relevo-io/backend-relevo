@@ -11,7 +11,7 @@ import { AiError } from '../utils/AppError.js';
  * @param cvKey - La clave S3 del documento PDF del CV
  * @returns El resultado estructurado del análisis de IA
  */
-export const solicitarAnalisisIA = async (cvKey: string): Promise<IResultadoIa> => {
+export const solicitarAnalisisIA = async (cvKey: string, language?: string): Promise<IResultadoIa> => {
   const pdfUrl = await generarPresignedGet(cvKey);
   const endpoint = `${config.pythonService.url}/api/v1/analyze`;
 
@@ -22,7 +22,7 @@ export const solicitarAnalisisIA = async (cvKey: string): Promise<IResultadoIa> 
         'Content-Type': 'application/json',
         'X-API-Key': config.pythonService.apiKey
       },
-      body: JSON.stringify({ pdf_url: pdfUrl })
+      body: JSON.stringify({ pdf_url: pdfUrl, language })
     });
 
     if (!response.ok) {

@@ -12,7 +12,17 @@ export const solicitudIdParamsSchema = z.object({
 
 export const createSolicitudSchema = z.object({
   opportunityId: z.string().length(24, 'ID de oferta invalido'),
-  message: z.string().max(1000).optional()
+  message: z.string().max(1000).optional(),
+  bio: z.string().min(10, 'La biografía debe tener al menos 10 caracteres'),
+  professionalBackground: z.string().min(10, 'La trayectoria profesional debe tener al menos 10 caracteres'),
+  preferredRegions: z.array(z.string().trim()),
+  availableCapital: z
+    .number({ message: 'El capital disponible es requerido' })
+    .min(0, 'El capital disponible no puede ser negativo'),
+  financingNeeded: z.boolean({ message: 'Debes indicar si necesitas financiación' }),
+  ndaAccepted: z.boolean({ message: 'Debes aceptar el acuerdo de confidencialidad' }).refine((v) => v === true, {
+    message: 'Debes aceptar el acuerdo de confidencialidad'
+  })
 });
 
 export const updateSolicitudSchema = z

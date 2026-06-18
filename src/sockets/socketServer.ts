@@ -35,7 +35,7 @@ export function initSocketServer(httpServer: HttpServer): SocketIOServer {
 
   // ── Authentication middleware ──────────────────
   // JWT travels in socket.handshake.auth.token (NOT in query params)
-  io.use((socket: Socket, next) => {
+  io.use((socket: Socket, next: (err?: Error) => void): void => {
     const rawToken: string | undefined = socket.handshake.auth?.token;
 
     if (!rawToken) {

@@ -79,6 +79,9 @@ export interface IChat {
   unreadInterested: number; // Mensajes no leídos por el interested
   isReadOnly: boolean; // true si la oferta fue eliminada/finalizada
   status: ChatStatus; // Estado de aprobación del chat
+  closedByOwner: boolean;
+  closedByInterested: boolean;
+  closedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -135,6 +138,18 @@ const chatSchema = new Schema<IChat>(
       type: String,
       enum: ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
       default: 'APPROVED'
+    },
+    closedByOwner: {
+      type: Boolean,
+      default: false
+    },
+    closedByInterested: {
+      type: Boolean,
+      default: false
+    },
+    closedAt: {
+      type: Date,
+      required: false
     }
   },
   {

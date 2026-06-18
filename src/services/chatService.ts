@@ -1,7 +1,9 @@
-import { ChatModel, IChat } from '../models/chatModel.js';
+import mongoose, { Types } from 'mongoose';
+import { ChatModel, IChat, ChatStatus } from '../models/chatModel.js';
 import { MensajeModel, IMensaje } from '../models/mensajeModel.js';
 import { OfertaModel } from '../models/ofertaModel.js';
 import { SolicitudModel } from '../models/solicitudModel.js';
+import { logger } from '../config.js';
 
 export const verificarOfertaYObtenerPropietario = async (ofertaId: string): Promise<string | null> => {
   const oferta = await OfertaModel.findById(ofertaId).select('owner').lean();
@@ -23,15 +25,28 @@ export const crearOObtenerChat = async (
   interestedId: string,
   solicitudAceptada: boolean
 ): Promise<IChat> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const update: any = {
+  const update: mongoose.UpdateQuery<IChat> & {
     $setOnInsert: {
-      oferta: ofertaId,
-      owner: ownerId,
-      interested: interestedId,
+      oferta: Types.ObjectId;
+      owner: Types.ObjectId;
+      interested: Types.ObjectId;
+      unreadOwner: number;
+      unreadInterested: number;
+      isReadOnly: boolean;
+      closedByOwner: boolean;
+      closedByInterested: boolean;
+      status?: ChatStatus;
+    };
+  } = {
+    $setOnInsert: {
+      oferta: new Types.ObjectId(ofertaId),
+      owner: new Types.ObjectId(ownerId),
+      interested: new Types.ObjectId(interestedId),
       unreadOwner: 0,
       unreadInterested: 0,
-      isReadOnly: false
+      isReadOnly: false,
+      closedByOwner: false,
+      closedByInterested: false
     }
   };
 
@@ -48,6 +63,24 @@ export const crearOObtenerChat = async (
   })
     .populate('owner', 'fullName email')
     .populate('interested', 'fullName email');
+};
+
+import { generarPresignedGet } from './storageService.js';
+
+const populateFileUrl = async (mensaje: IMensaje | null): Promise<IMensaje | null> => {
+  if (!mensaje) return null;
+  if (mensaje.s3Key) {
+    try {
+      mensaje.fileUrl = await generarPresignedGet(mensaje.s3Key);
+    } catch (err) {
+      logger.error({ err, s3Key: mensaje.s3Key }, '[ChatService] Error generating presigned GET URL');
+    }
+  }
+  return mensaje;
+};
+
+const populateFileUrls = async (mensajes: IMensaje[]): Promise<IMensaje[]> => {
+  return await Promise.all(mensajes.map((m) => populateFileUrl(m) as Promise<IMensaje>));
 };
 
 export const obtenerChatsPorUsuario = async (userId: string): Promise<IChat[]> => {
@@ -67,15 +100,19 @@ export const obtenerMensajesPorChat = async (chatId: string, limit: number, befo
     filter['createdAt'] = { $lt: new Date(before) };
   }
 
-  return await MensajeModel.find(filter)
+  const mensajes = await MensajeModel.find(filter)
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate('sender', 'fullName email')
     .lean();
+
+  return await populateFileUrls(mensajes);
 };
 
 export const obtenerChatBasicoPorId = async (chatId: string): Promise<Partial<IChat> | null> => {
-  return await ChatModel.findById(chatId).select('owner interested isReadOnly status').lean();
+  return await ChatModel.findById(chatId)
+    .select('owner interested isReadOnly status closedByOwner closedByInterested closedAt')
+    .lean();
 };
 
 export const resetearContadorNoLeidos = async (chatId: string, resetField: Record<string, unknown>): Promise<void> => {
@@ -92,11 +129,44 @@ export const actualizarEstadoChat = async (chatId: string, status: string): Prom
   );
 };
 
-export const guardarMensaje = async (chatId: string, senderId: string, content: string): Promise<IMensaje> => {
+export const cerrarVentaChat = async (chatId: string, userId: string): Promise<IChat | null> => {
+  const chat = await ChatModel.findById(chatId).select('owner interested closedByOwner closedByInterested').lean();
+  if (!chat) return null;
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  if (!isOwner && !isInterested) return null;
+
+  const closedByOwner = isOwner ? true : Boolean(chat.closedByOwner);
+  const closedByInterested = isInterested ? true : Boolean(chat.closedByInterested);
+  const setFields: Partial<IChat> = {
+    closedByOwner,
+    closedByInterested
+  };
+
+  if (closedByOwner && closedByInterested) {
+    setFields.closedAt = new Date();
+    setFields.isReadOnly = true;
+  }
+
+  return await ChatModel.findByIdAndUpdate(chatId, { $set: setFields }, { new: true, runValidators: true })
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .lean();
+};
+
+export const guardarMensaje = async (
+  chatId: string,
+  senderId: string,
+  content: string,
+  extraData?: Partial<IMensaje>
+): Promise<IMensaje> => {
   return await MensajeModel.create({
     chat: chatId,
     sender: senderId,
-    content
+    content,
+    ...extraData
   });
 };
 
@@ -114,5 +184,6 @@ export const actualizarChatConNuevoMensaje = async (
 };
 
 export const obtenerMensajePoblado = async (mensajeId: string): Promise<IMensaje | null> => {
-  return await MensajeModel.findById(mensajeId).populate('sender', 'fullName').lean();
+  const msg = await MensajeModel.findById(mensajeId).populate('sender', 'fullName').lean();
+  return await populateFileUrl(msg);
 };

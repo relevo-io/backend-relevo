@@ -6,7 +6,7 @@ import * as usuarioService from '../services/usuarioService.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { UnauthorizedError, NotFoundError } from '../utils/AppError.js';
 
-export const login = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const login = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   const { email, password } = req.body;
 
   const usuario = await authService.validateUserCredentials(email, password);
@@ -31,12 +31,13 @@ export const login = asyncWrapper(async (req: Request, res: Response, _next: Nex
       email: usuario.email,
       roles: usuario.roles,
       language: usuario.language,
-      theme: usuario.theme
+      theme: usuario.theme,
+      notificationPreferences: usuario.notificationPreferences
     }
   });
 });
 
-export const refreshToken = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const refreshToken = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   const incomingRefreshToken = req.cookies?.[config.cookies.refreshName] || req.body?.refreshToken;
 
   if (!incomingRefreshToken) {
@@ -64,7 +65,8 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, _ne
         email: usuario.email,
         roles: usuario.roles,
         language: usuario.language,
-        theme: usuario.theme
+        theme: usuario.theme,
+        notificationPreferences: usuario.notificationPreferences
       }
     });
   } catch (_error) {
@@ -72,7 +74,7 @@ export const refreshToken = asyncWrapper(async (req: Request, res: Response, _ne
   }
 });
 
-export const logout = asyncWrapper(async (req: Request, res: Response, _next: NextFunction) => {
+export const logout = asyncWrapper(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
   res.clearCookie(config.cookies.refreshName, {
     ...config.cookies.options
   });
@@ -80,10 +82,41 @@ export const logout = asyncWrapper(async (req: Request, res: Response, _next: Ne
   res.status(200).json({ message: 'Logout exitoso' });
 });
 
-export const getMe = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const getMe = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const usuario = await usuarioService.obtenerUsuarioPorId(String(req.user?.id));
   if (!usuario) {
     throw new NotFoundError('Usuario no encontrado');
   }
   res.status(200).json(usuario);
+});
+
+export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) => {
+  const { idToken } = req.body as { idToken?: string };
+
+  if (!idToken) {
+    throw new UnauthorizedError('idToken requerido');
+  }
+
+  const { accessToken, refreshToken, usuario, isNewUser } = await authService.loginWithFirebaseToken(idToken);
+
+  res.cookie(config.cookies.refreshName, refreshToken, {
+    ...config.cookies.options,
+    maxAge: config.cookies.maxAge
+  });
+
+  res.status(200).json({
+    message: 'Login Firebase exitoso',
+    accessToken,
+    isNewUser,
+    usuario: {
+      _id: usuario._id,
+      fullName: usuario.fullName,
+      email: usuario.email,
+      roles: usuario.roles,
+      language: usuario.language,
+      theme: usuario.theme,
+      authProvider: usuario.authProvider,
+      notificationPreferences: usuario.notificationPreferences
+    }
+  });
 });

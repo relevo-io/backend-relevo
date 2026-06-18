@@ -80,6 +80,12 @@ export interface IOferta {
   employeeRange?: (typeof employeeRanges)[number];
   companyDescription: string;
   extendedDescription?: string;
+  detailViewCount?: number;
+  favoriteCount?: number;
+  ownerRating?: {
+    average: number;
+    count: number;
+  };
   publishedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -127,6 +133,12 @@ const ofertaSchema = new Schema<IOferta>(
       required: false,
       maxlength: 10000,
       trim: true
+    },
+    detailViewCount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0
     },
     publishedAt: {
       type: Date,

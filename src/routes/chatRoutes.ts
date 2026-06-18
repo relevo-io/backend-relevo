@@ -7,7 +7,10 @@ import {
   getChatMessages,
   markChatAsRead,
   setChatReadOnly,
-  updateChatStatus
+  updateChatStatus,
+  closeDeal,
+  getMyChatRating,
+  rateChat
 } from '../controllers/chatController.js';
 
 const router = Router();
@@ -180,5 +183,9 @@ router.patch('/:chatId/readonly', asyncWrapper(setChatReadOnly));
  *         description: Estat actualitzat
  */
 router.patch('/:chatId/status', asyncWrapper(updateChatStatus));
+
+router.post('/:chatId/close', authorizeChatParticipant, asyncWrapper(closeDeal));
+router.get('/:chatId/my-rating', authorizeChatParticipant, asyncWrapper(getMyChatRating));
+router.post('/:chatId/rating', authorizeChatParticipant, asyncWrapper(rateChat));
 
 export default router;

@@ -1,14 +1,16 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.js';
 import * as chatService from '../services/chatService.js';
+import * as ratingService from '../services/ratingService.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
+import { NotificacionModel } from '../models/notificacionModel.js';
 
 // ─────────────────────────────────────────────
 //  POST /api/chats
 //  Crea o recupera un chat existente para (oferta + interesado)
-// ─────────────────────────────────────────────
-export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Response) => {
+//  ─────────────────────────────────────────────
+export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const callerId = req.user!.id;
   const { ofertaId, interestedId } = req.body;
 
@@ -50,8 +52,8 @@ export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Respon
 // ─────────────────────────────────────────────
 //  GET /api/chats
 //  Mis chats activos (como owner o como interested)
-// ─────────────────────────────────────────────
-export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response) => {
+//  ─────────────────────────────────────────────
+export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
 
   const chats = await chatService.obtenerChatsPorUsuario(userId);
@@ -63,8 +65,8 @@ export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response) =
 //  GET /api/chats/:chatId/messages
 //  Historial con paginación por cursor temporal
 //  Query params: ?limit=30&before=<ISO_date>
-// ─────────────────────────────────────────────
-export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Response) => {
+//  ─────────────────────────────────────────────
+export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const { chatId } = req.params;
   const limit = Math.min(parseInt(req.query['limit'] as string) || 30, 100);
   const before = req.query['before'] as string | undefined;
@@ -78,8 +80,8 @@ export const getChatMessages = asyncWrapper(async (req: AuthRequest, res: Respon
 // ─────────────────────────────────────────────
 //  PATCH /api/chats/:chatId/read
 //  Marca los mensajes como leídos (reset unread counter)
-// ─────────────────────────────────────────────
-export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Response) => {
+//  ─────────────────────────────────────────────
+export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
 
@@ -98,6 +100,12 @@ export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Respons
   const resetField = isOwner ? { unreadOwner: 0 } : { unreadInterested: 0 };
   await chatService.resetearContadorNoLeidos(chatId, resetField);
 
+  // Marcar las notificaciones del chat como leídas en la base de datos
+  await NotificacionModel.updateMany(
+    { userId, type: 'chat', 'metadata.chatId': chatId, read: false },
+    { $set: { read: true } }
+  );
+
   res.status(200).json({ ok: true });
 });
 
@@ -106,7 +114,7 @@ export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Respons
 //  Marca un chat como solo lectura (llamado cuando se borra una oferta)
 //  Solo el owner o admin puede hacerlo
 // ─────────────────────────────────────────────
-export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
 
@@ -130,7 +138,7 @@ export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Respon
 //  PATCH /api/chats/:chatId/status
 //  Permite al receptor (owner) aceptar o rechazar un chat pendiente
 // ─────────────────────────────────────────────
-export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Response) => {
+export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
   const { chatId } = req.params;
   const { status } = req.body;
@@ -152,4 +160,52 @@ export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Respo
   const updated = await chatService.actualizarEstadoChat(chatId, status);
 
   res.status(200).json(updated);
+});
+
+// ─────────────────────────────────────────────
+//  POST /api/chats/:chatId/close
+//  Marca la venta como cerrada por el participante actual.
+// ─────────────────────────────────────────────
+export const closeDeal = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+
+  const chat = await chatService.obtenerChatBasicoPorId(chatId);
+  if (!chat) {
+    throw new NotFoundError('Chat no encontrado');
+  }
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  const isAdmin = req.user!.roles.includes('ADMIN');
+  if (!isOwner && !isInterested && !isAdmin) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  const updated = await chatService.cerrarVentaChat(chatId, userId);
+  if (!updated) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  res.status(200).json(updated);
+});
+
+export const getMyChatRating = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const rating = await ratingService.obtenerMiRatingDeChat(chatId, userId);
+  res.status(200).json({ rating });
+});
+
+export const rateChat = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const { score, comment } = req.body;
+
+  if (typeof score !== 'number') {
+    throw new ValidationError('La valoracion es requerida');
+  }
+
+  const rating = await ratingService.valorarChat(chatId, userId, score, comment);
+  res.status(200).json(rating);
 });
