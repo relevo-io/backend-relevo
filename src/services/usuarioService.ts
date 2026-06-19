@@ -1,15 +1,35 @@
 import { IUsuario, UsuarioModel, INotificationPreferences } from '../models/usuarioModel.js';
+import { NotFoundError, ValidationError } from '../utils/AppError.js';
+
+const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+
+export const isProActive = (usuario?: Pick<IUsuario, 'proExpiresAt'> | null): boolean => {
+  if (!usuario?.proExpiresAt) return false;
+  return new Date(usuario.proExpiresAt).getTime() > Date.now();
+};
+
+const hydrateUsuarioAccess = <T extends IUsuario | null>(usuario: T): T => {
+  if (!usuario) return usuario;
+
+  return {
+    ...usuario,
+    publicationCredits: usuario.publicationCredits ?? 0,
+    proExpiresAt: usuario.proExpiresAt ?? null,
+    proActive: isProActive(usuario)
+  } as T;
+};
 
 export const crearUsuario = async (data: Partial<IUsuario>): Promise<IUsuario> => {
-  return await new UsuarioModel(data).save();
+  const usuario = await new UsuarioModel(data).save();
+  return hydrateUsuarioAccess(usuario.toObject());
 };
 
 export const obtenerUsuarioPorId = async (id: string): Promise<IUsuario | null> => {
-  return await UsuarioModel.findById(id).select('-password').lean();
+  return hydrateUsuarioAccess(await UsuarioModel.findById(id).select('-password').lean());
 };
 
 export const actualizarUsuario = async (id: string, data: Partial<IUsuario>): Promise<IUsuario | null> => {
-  return await UsuarioModel.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean();
+  return hydrateUsuarioAccess(await UsuarioModel.findByIdAndUpdate(id, data, { returnDocument: 'after' }).lean());
 };
 
 export const eliminarUsuario = async (id: string): Promise<IUsuario | null> => {
@@ -22,7 +42,9 @@ export const eliminarUsuariosPorIds = async (ids: string[]): Promise<number> => 
 };
 
 export const actualizarVisibilidadUsuario = async (id: string, visible: boolean): Promise<IUsuario | null> => {
-  return await UsuarioModel.findByIdAndUpdate(id, { visible }, { returnDocument: 'after' }).lean();
+  return hydrateUsuarioAccess(
+    await UsuarioModel.findByIdAndUpdate(id, { visible }, { returnDocument: 'after' }).lean()
+  );
 };
 
 export const actualizarVisibilidadUsuarios = async (
@@ -37,7 +59,8 @@ export const actualizarVisibilidadUsuarios = async (
 };
 
 export const listarUsuarios = async (): Promise<IUsuario[]> => {
-  return await UsuarioModel.find().select('-password').lean();
+  const usuarios = await UsuarioModel.find().select('-password').lean();
+  return usuarios.map((usuario) => hydrateUsuarioAccess(usuario)) as IUsuario[];
 };
 
 export const registrarFcmToken = async (id: string, token: string): Promise<void> => {
@@ -54,11 +77,106 @@ export const actualizarPreferenciasNotificacion = async (
   id: string,
   prefs: INotificationPreferences
 ): Promise<IUsuario | null> => {
-  return await UsuarioModel.findByIdAndUpdate(
+  return hydrateUsuarioAccess(
+    await UsuarioModel.findByIdAndUpdate(id, { $set: { notificationPreferences: prefs } }, { returnDocument: 'after' })
+      .select('-password')
+      .lean()
+  );
+};
+
+export const actualizarPreferenciasMarketplace = async (
+  id: string,
+  data: Pick<
+    IUsuario,
+    | 'preferredRegions'
+    | 'preferredSectors'
+    | 'preferredEmployeeRanges'
+    | 'preferredRevenueRanges'
+    | 'preferredCreationYearFrom'
+    | 'preferredCreationYearTo'
+  >
+): Promise<IUsuario | null> => {
+  return hydrateUsuarioAccess(
+    await UsuarioModel.findByIdAndUpdate(id, { $set: data }, { returnDocument: 'after' }).select('-password').lean()
+  );
+};
+
+export const otorgarCreditoPublicacion = async (id: string): Promise<IUsuario> => {
+  const usuario = await UsuarioModel.findByIdAndUpdate(
     id,
-    { $set: { notificationPreferences: prefs } },
+    { $inc: { publicationCredits: 1 } },
     { returnDocument: 'after' }
   )
     .select('-password')
+    .lean();
+
+  if (!usuario) {
+    throw new NotFoundError('Usuario no encontrado');
+  }
+
+  return hydrateUsuarioAccess(usuario) as IUsuario;
+};
+
+export const consumirCreditoPublicacion = async (id: string): Promise<void> => {
+  const usuario = await UsuarioModel.findOneAndUpdate(
+    { _id: id, publicationCredits: { $gt: 0 } },
+    { $inc: { publicationCredits: -1 } },
+    { returnDocument: 'after' }
+  )
+    .select('_id')
+    .lean();
+
+  if (!usuario) {
+    throw new ValidationError('MONETIZATION.PUBLISH_CREDIT_REQUIRED');
+  }
+};
+
+export const activarPlanPro = async (id: string): Promise<IUsuario> => {
+  const baseDate = new Date();
+  const usuarioActual = await UsuarioModel.findById(id).select('proExpiresAt').lean();
+
+  if (!usuarioActual) {
+    throw new NotFoundError('Usuario no encontrado');
+  }
+
+  const currentExpiry = usuarioActual.proExpiresAt ? new Date(usuarioActual.proExpiresAt) : null;
+  const startAt = currentExpiry && currentExpiry.getTime() > Date.now() ? currentExpiry : baseDate;
+  const nextExpiry = new Date(startAt.getTime() + THIRTY_DAYS_IN_MS);
+
+  const usuario = await UsuarioModel.findByIdAndUpdate(
+    id,
+    { $set: { proExpiresAt: nextExpiry } },
+    { returnDocument: 'after' }
+  )
+    .select('-password')
+    .lean();
+
+  if (!usuario) {
+    throw new NotFoundError('Usuario no encontrado');
+  }
+
+  return hydrateUsuarioAccess(usuario) as IUsuario;
+};
+
+export const obtenerAccesoUsuario = async (
+  id: string
+): Promise<Pick<
+  IUsuario,
+  | '_id'
+  | 'roles'
+  | 'favoriteOfferIds'
+  | 'publicationCredits'
+  | 'proExpiresAt'
+  | 'preferredRegions'
+  | 'preferredSectors'
+  | 'preferredEmployeeRanges'
+  | 'preferredRevenueRanges'
+  | 'preferredCreationYearFrom'
+  | 'preferredCreationYearTo'
+> | null> => {
+  return await UsuarioModel.findById(id)
+    .select(
+      'roles favoriteOfferIds publicationCredits proExpiresAt preferredRegions preferredSectors preferredEmployeeRanges preferredRevenueRanges preferredCreationYearFrom preferredCreationYearTo'
+    )
     .lean();
 };

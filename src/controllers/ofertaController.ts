@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { IOferta } from '../models/ofertaModel.js';
 import * as ofertaService from '../services/ofertaService.js';
+import * as usuarioService from '../services/usuarioService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/AppError.js';
@@ -24,23 +25,45 @@ const extractOwnerId = (owner: unknown): string => {
 
 export const getOfertas = asyncWrapper(
   async (
-    req: Request<{}, {}, {}, { excludeOwnerId?: string; search?: string; page?: string; limit?: string }>,
+    req: AuthRequest &
+      Request<
+        {},
+        {},
+        {},
+        {
+          excludeOwnerId?: string;
+          search?: string;
+          sector?: string;
+          region?: string;
+          revenueRange?: string;
+          employeeRange?: string;
+          creationYearFrom?: string;
+          creationYearTo?: string;
+          page?: string;
+          limit?: string;
+        }
+      >,
     res: Response
   ): Promise<void> => {
     const pagination = parsePagination(req.query.page, req.query.limit);
+    const filters = {
+      excludeOwnerId: req.query.excludeOwnerId,
+      search: req.query.search,
+      sector: req.query.sector,
+      region: req.query.region,
+      revenueRange: req.query.revenueRange,
+      employeeRange: req.query.employeeRange,
+      creationYearFrom: req.query.creationYearFrom ? Number.parseInt(req.query.creationYearFrom, 10) : undefined,
+      creationYearTo: req.query.creationYearTo ? Number.parseInt(req.query.creationYearTo, 10) : undefined,
+      viewerId: req.user?.id
+    };
     if (pagination) {
-      const result = await ofertaService.listarOfertasPaginadas(pagination, {
-        excludeOwnerId: req.query.excludeOwnerId,
-        search: req.query.search
-      });
+      const result = await ofertaService.listarOfertasPaginadas(pagination, filters);
       res.status(200).json(result);
       return;
     }
 
-    const ofertas = await ofertaService.listarOfertas({
-      excludeOwnerId: req.query.excludeOwnerId,
-      search: req.query.search
-    });
+    const ofertas = await ofertaService.listarOfertas(filters);
     res.status(200).json(ofertas);
   }
 );
@@ -74,6 +97,9 @@ export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response)
   }
 
   const isAdmin = req.user.roles.includes('ADMIN');
+  if (!isAdmin) {
+    await usuarioService.consumirCreditoPublicacion(req.user.id);
+  }
   const ownerToSave = isAdmin && req.body.owner ? new Types.ObjectId(req.body.owner) : new Types.ObjectId(req.user.id);
 
   const nuevaOferta = await ofertaService.crearOferta({
@@ -83,6 +109,18 @@ export const createOferta = asyncWrapper(async (req: AuthRequest, res: Response)
 
   logger.info({ ofertaId: nuevaOferta._id, owner: nuevaOferta.owner }, 'CONTROLLER createOferta: guardada');
   res.status(201).json(nuevaOferta);
+});
+
+export const purchasePublicationCredit = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError('No autenticado');
+  }
+
+  const usuario = await usuarioService.otorgarCreditoPublicacion(userId);
+  res.status(200).json({
+    publicationCredits: usuario.publicationCredits ?? 0
+  });
 });
 
 export const updateOferta = asyncWrapper(

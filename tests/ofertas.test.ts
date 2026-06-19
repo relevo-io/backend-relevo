@@ -42,7 +42,17 @@ describe('Ofertas API', () => {
     userId = user!._id.toString();
   });
 
+  const grantOwnerCredit = async () => {
+    const response = await request(app)
+      .post('/api/ofertas/publication-credit/purchase')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(response.status).toBe(200);
+  };
+
   it('should allow an OWNER to create an offer', async () => {
+    await grantOwnerCredit();
+
     const response = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Catalonia',
       sector: 'Technology',
@@ -77,6 +87,7 @@ describe('Ofertas API', () => {
 
   it('should allow owner to update their offer', async () => {
     // Create an offer first
+    await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Valencia',
       sector: 'Agriculture',
@@ -96,6 +107,7 @@ describe('Ofertas API', () => {
 
   it('should deny another user from deleting an offer they do not own', async () => {
     // Create an offer first
+    await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Galicia',
       sector: 'Fishing',
@@ -111,6 +123,7 @@ describe('Ofertas API', () => {
   });
 
   it('should increment detail views except for owner and admin', async () => {
+    await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Sevilla',
       sector: 'Hospitality',
@@ -133,6 +146,7 @@ describe('Ofertas API', () => {
   });
 
   it('should persist favorites and return updated favorite counts', async () => {
+    await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Mallorca',
       sector: 'Hospitality',
@@ -161,6 +175,7 @@ describe('Ofertas API', () => {
   });
 
   it('should return private analytics for the owner', async () => {
+    await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Bilbao',
       sector: 'Services',

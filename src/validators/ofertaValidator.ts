@@ -38,9 +38,25 @@ export const ofertaQuerySchema = z
   .object({
     excludeOwnerId: objectIdSchema.optional(),
     search: z.string().trim().min(1).max(120).optional(),
+    sector: z.string().trim().min(1).max(120).optional(),
+    region: z.string().trim().min(1).max(120).optional(),
+    revenueRange: z.enum(revenueRanges).optional(),
+    employeeRange: z.enum(employeeRanges).optional(),
+    creationYearFrom: z.coerce.number().int().min(1800).max(new Date().getFullYear()).optional(),
+    creationYearTo: z.coerce.number().int().min(1800).max(new Date().getFullYear()).optional(),
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional()
   })
+  .refine(
+    (data) =>
+      data.creationYearFrom === undefined ||
+      data.creationYearTo === undefined ||
+      data.creationYearFrom <= data.creationYearTo,
+    {
+      message: 'El ano de inicio no puede ser mayor que el ano de fin',
+      path: ['creationYearFrom']
+    }
+  )
   .strict();
 
 export const createOfertaSchema = ofertaBaseSchema.strict();

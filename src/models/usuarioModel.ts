@@ -2,6 +2,7 @@ import mongoose, { Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 import { config } from '../config.js';
+import { employeeRanges, revenueRanges } from './ofertaModel.js';
 
 export const userRoles = ['OWNER', 'INTERESTED', 'ADMIN'] as const;
 export const authProviders = ['local', 'google', 'github'] as const;
@@ -115,11 +116,19 @@ export interface IUsuario {
   professionalBackground?: string;
   cv?: string;
   preferredRegions?: string[];
+  preferredSectors?: string[];
+  preferredEmployeeRanges?: Array<(typeof employeeRanges)[number]>;
+  preferredRevenueRanges?: Array<(typeof revenueRanges)[number]>;
+  preferredCreationYearFrom?: number;
+  preferredCreationYearTo?: number;
   visible?: boolean;
   language?: string;
   theme?: string;
   fcmTokens?: string[];
   notificationPreferences?: INotificationPreferences;
+  publicationCredits?: number;
+  proExpiresAt?: Date | null;
+  proActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -203,6 +212,34 @@ const usuarioSchema = new Schema<IUsuario>(
         trim: true
       }
     ],
+    preferredSectors: [
+      {
+        type: String,
+        trim: true
+      }
+    ],
+    preferredEmployeeRanges: [
+      {
+        type: String,
+        enum: employeeRanges
+      }
+    ],
+    preferredRevenueRanges: [
+      {
+        type: String,
+        enum: revenueRanges
+      }
+    ],
+    preferredCreationYearFrom: {
+      type: Number,
+      min: 1800,
+      required: false
+    },
+    preferredCreationYearTo: {
+      type: Number,
+      min: 1800,
+      required: false
+    },
     visible: {
       type: Boolean,
       required: true,
@@ -228,6 +265,17 @@ const usuarioSchema = new Schema<IUsuario>(
     fcmTokens: {
       type: [String],
       default: []
+    },
+    publicationCredits: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0
+    },
+    proExpiresAt: {
+      type: Date,
+      required: false,
+      default: null
     }
   },
   {
