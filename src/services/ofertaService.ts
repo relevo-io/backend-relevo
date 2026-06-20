@@ -6,6 +6,7 @@ import { procesarAlertasParaOferta } from './alertaService.js';
 import { RatingSummary, obtenerResumenRating, obtenerResumenRatingsPorUsuarios } from './ratingService.js';
 import { ForbiddenError } from '../utils/AppError.js';
 import { isProActive, obtenerAccesoUsuario } from './usuarioService.js';
+import Historial, { ICanvi } from '../models/historialModel.js';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -277,8 +278,49 @@ export const obtenerOfertaPorId = async (id: string): Promise<IOferta | null> =>
   return { ...normalizeOferta(oferta), ownerRating } as IOferta;
 };
 
+const obtenerCambios = <T extends object, U extends object>(ofertaOriginal: T, ofertaActualizada: U): ICanvi[] => {
+  const canvis: ICanvi[] = [];
+  const original = ofertaOriginal as Record<string, unknown>;
+  const actualizado = ofertaActualizada as Record<string, unknown>;
+
+  for (const llave in actualizado) {
+    if (['id', '_id', '__v', 'createdAt', 'updatedAt'].includes(llave)) continue;
+
+    const valorOriginal = original[llave];
+    const valorNuevo = actualizado[llave];
+
+    const strOriginal = JSON.stringify(valorOriginal);
+    const strNuevo = JSON.stringify(valorNuevo);
+    if (strOriginal !== strNuevo) {
+      canvis.push({
+        campo: llave,
+        valorAnterior: valorOriginal,
+        valorNuevo: valorNuevo
+      });
+    }
+  }
+  return canvis;
+};
+
 export const actualizarOferta = async (id: string, data: Partial<IOferta>): Promise<IOferta | null> => {
-  return await OfertaModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  const ofertaOriginal = await OfertaModel.findById(id).lean();
+
+  if (!ofertaOriginal) {
+    throw new Error('Oferta no encontrada');
+  }
+
+  const canvis = obtenerCambios(ofertaOriginal, data);
+
+  if (canvis.length > 0) {
+    await Historial.create({
+      ofertaId: id,
+      canvis: canvis
+    });
+
+    return await OfertaModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  } else {
+    return ofertaOriginal;
+  }
 };
 
 export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
