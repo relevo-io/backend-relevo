@@ -1,5 +1,5 @@
 import mongoose, { Types } from 'mongoose';
-import { ChatModel, IChat, ChatStatus } from '../models/chatModel.js';
+import { ChatModel, IChat, ChatStatus, PostCloseGuidanceDecision } from '../models/chatModel.js';
 import { MensajeModel, IMensaje } from '../models/mensajeModel.js';
 import { OfertaModel } from '../models/ofertaModel.js';
 import { SolicitudModel } from '../models/solicitudModel.js';
@@ -35,6 +35,8 @@ export const crearOObtenerChat = async (
       isReadOnly: boolean;
       closedByOwner: boolean;
       closedByInterested: boolean;
+      postCloseGuidanceOwnerDecision: PostCloseGuidanceDecision;
+      postCloseGuidanceInterestedDecision: PostCloseGuidanceDecision;
       status?: ChatStatus;
     };
   } = {
@@ -46,7 +48,9 @@ export const crearOObtenerChat = async (
       unreadInterested: 0,
       isReadOnly: false,
       closedByOwner: false,
-      closedByInterested: false
+      closedByInterested: false,
+      postCloseGuidanceOwnerDecision: 'PENDING',
+      postCloseGuidanceInterestedDecision: 'PENDING'
     }
   };
 
@@ -94,6 +98,14 @@ export const obtenerChatsPorUsuario = async (userId: string): Promise<IChat[]> =
     .lean();
 };
 
+export const obtenerChatDetalladoPorId = async (chatId: string): Promise<IChat | null> => {
+  return await ChatModel.findById(chatId)
+    .populate('owner', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .populate('interested', 'fullName email')
+    .lean();
+};
+
 export const obtenerMensajesPorChat = async (chatId: string, limit: number, before?: string): Promise<IMensaje[]> => {
   const filter: Record<string, unknown> = { chat: chatId };
   if (before) {
@@ -111,7 +123,9 @@ export const obtenerMensajesPorChat = async (chatId: string, limit: number, befo
 
 export const obtenerChatBasicoPorId = async (chatId: string): Promise<Partial<IChat> | null> => {
   return await ChatModel.findById(chatId)
-    .select('owner interested isReadOnly status closedByOwner closedByInterested closedAt')
+    .select(
+      'owner interested isReadOnly status closedByOwner closedByInterested closedAt postCloseGuidanceOwnerDecision postCloseGuidanceInterestedDecision'
+    )
     .lean();
 };
 
@@ -127,6 +141,22 @@ export const actualizarEstadoChat = async (chatId: string, status: string): Prom
   return await ChatModel.findByIdAndUpdate(chatId, { $set: { status } }, { new: true }).populate(
     'owner interested oferta'
   );
+};
+
+export const actualizarEstadoChatPorOfertaEInteresado = async (
+  ofertaId: string,
+  interestedId: string,
+  status: ChatStatus
+): Promise<IChat | null> => {
+  return await ChatModel.findOneAndUpdate(
+    { oferta: ofertaId, interested: interestedId },
+    { $set: { status } },
+    { new: true }
+  )
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .lean();
 };
 
 export const cerrarVentaChat = async (chatId: string, userId: string): Promise<IChat | null> => {
@@ -148,6 +178,29 @@ export const cerrarVentaChat = async (chatId: string, userId: string): Promise<I
     setFields.closedAt = new Date();
     setFields.isReadOnly = true;
   }
+
+  return await ChatModel.findByIdAndUpdate(chatId, { $set: setFields }, { new: true, runValidators: true })
+    .populate('owner', 'fullName email')
+    .populate('interested', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .lean();
+};
+
+export const registrarDecisionGuiadoPostCierre = async (
+  chatId: string,
+  userId: string,
+  decision: Exclude<PostCloseGuidanceDecision, 'PENDING'>
+): Promise<IChat | null> => {
+  const chat = await ChatModel.findById(chatId).select('owner interested').lean();
+  if (!chat) return null;
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  if (!isOwner && !isInterested) return null;
+
+  const setFields: Partial<IChat> = isOwner
+    ? { postCloseGuidanceOwnerDecision: decision }
+    : { postCloseGuidanceInterestedDecision: decision };
 
   return await ChatModel.findByIdAndUpdate(chatId, { $set: setFields }, { new: true, runValidators: true })
     .populate('owner', 'fullName email')

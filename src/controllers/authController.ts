@@ -4,7 +4,7 @@ import * as authService from '../services/authService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import * as usuarioService from '../services/usuarioService.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
-import { UnauthorizedError, NotFoundError } from '../utils/AppError.js';
+import { UnauthorizedError, NotFoundError, ValidationError } from '../utils/AppError.js';
 
 const serializeAuthUser = (usuario: {
   _id?: unknown;
@@ -118,13 +118,16 @@ export const getMe = asyncWrapper(async (req: AuthRequest, res: Response): Promi
 });
 
 export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) => {
-  const { idToken } = req.body as { idToken?: string };
+  const { idToken, providerAccessToken } = req.body as { idToken?: string; providerAccessToken?: string };
 
   if (!idToken) {
     throw new UnauthorizedError('idToken requerido');
   }
 
-  const { accessToken, refreshToken, usuario, isNewUser } = await authService.loginWithFirebaseToken(idToken);
+  const { accessToken, refreshToken, usuario, isNewUser } = await authService.loginWithFirebaseToken(
+    idToken,
+    providerAccessToken
+  );
 
   res.cookie(config.cookies.refreshName, refreshToken, {
     ...config.cookies.options,
@@ -133,6 +136,44 @@ export const firebaseLogin = asyncWrapper(async (req: Request, res: Response) =>
 
   res.status(200).json({
     message: 'Login Firebase exitoso',
+    accessToken,
+    isNewUser,
+    usuario: serializeAuthUser(usuario)
+  });
+});
+
+export const getGitHubAuthorizeUrl = asyncWrapper(async (req: Request, res: Response) => {
+  const { redirectUri, state } = req.body as { redirectUri?: string; state?: string };
+
+  if (!redirectUri || !state) {
+    throw new ValidationError('redirectUri y state son requeridos');
+  }
+
+  const authorizeUrl = authService.getGitHubAuthorizeUrl(redirectUri, state);
+  res.status(200).json({ authorizeUrl });
+});
+
+export const oauthLogin = asyncWrapper(async (req: Request, res: Response) => {
+  const provider = req.params.provider;
+  const { code, redirectUri } = req.body as { code?: string; redirectUri?: string };
+
+  if (provider !== 'github') {
+    throw new ValidationError('Proveedor OAuth no soportado');
+  }
+
+  if (!code || !redirectUri) {
+    throw new ValidationError('code y redirectUri son requeridos');
+  }
+
+  const { accessToken, refreshToken, usuario, isNewUser } = await authService.loginWithGitHubCode(code, redirectUri);
+
+  res.cookie(config.cookies.refreshName, refreshToken, {
+    ...config.cookies.options,
+    maxAge: config.cookies.maxAge
+  });
+
+  res.status(200).json({
+    message: 'Login GitHub exitoso',
     accessToken,
     isNewUser,
     usuario: serializeAuthUser(usuario)

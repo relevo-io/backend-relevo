@@ -9,6 +9,7 @@ import {
   setChatReadOnly,
   updateChatStatus,
   closeDeal,
+  setPostCloseGuidanceDecision,
   getMyChatRating,
   rateChat
 } from '../controllers/chatController.js';
@@ -185,6 +186,7 @@ router.patch('/:chatId/readonly', asyncWrapper(setChatReadOnly));
 router.patch('/:chatId/status', asyncWrapper(updateChatStatus));
 
 router.post('/:chatId/close', authorizeChatParticipant, asyncWrapper(closeDeal));
+router.post('/:chatId/post-close-guidance', authorizeChatParticipant, asyncWrapper(setPostCloseGuidanceDecision));
 router.get('/:chatId/my-rating', authorizeChatParticipant, asyncWrapper(getMyChatRating));
 router.post('/:chatId/rating', authorizeChatParticipant, asyncWrapper(rateChat));
 

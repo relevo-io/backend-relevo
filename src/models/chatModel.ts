@@ -68,6 +68,7 @@ export interface ILastMessage {
 }
 
 export type ChatStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+export type PostCloseGuidanceDecision = 'PENDING' | 'ACCEPTED' | 'DISMISSED';
 
 export interface IChat {
   _id?: Types.ObjectId;
@@ -82,6 +83,8 @@ export interface IChat {
   closedByOwner: boolean;
   closedByInterested: boolean;
   closedAt?: Date;
+  postCloseGuidanceOwnerDecision: PostCloseGuidanceDecision;
+  postCloseGuidanceInterestedDecision: PostCloseGuidanceDecision;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -150,6 +153,16 @@ const chatSchema = new Schema<IChat>(
     closedAt: {
       type: Date,
       required: false
+    },
+    postCloseGuidanceOwnerDecision: {
+      type: String,
+      enum: ['PENDING', 'ACCEPTED', 'DISMISSED'],
+      default: 'PENDING'
+    },
+    postCloseGuidanceInterestedDecision: {
+      type: String,
+      enum: ['PENDING', 'ACCEPTED', 'DISMISSED'],
+      default: 'PENDING'
     }
   },
   {

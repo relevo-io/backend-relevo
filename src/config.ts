@@ -15,8 +15,17 @@ export const apiPort = process.env.PORT || 4000;
 export const config = {
   mongoUri: process.env.MONGO_URI,
   logLevel: process.env.LOG_LEVEL || 'info',
-  frontendUrl: process.env.FRONTEND_URL,
-  apiUrl: process.env.API_URL,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:4200',
+  apiUrl: process.env.API_URL || 'http://localhost:4000',
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    currency: process.env.STRIPE_CURRENCY || 'eur'
+  },
+  github: {
+    clientId: process.env.GITHUB_CLIENT_ID || '',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || ''
+  },
   bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'LlaveSecretaDefault',
