@@ -1,9 +1,9 @@
-import HistorialModel from '../models/historialModel';
+import HistorialModel from '../models/historialModel.js';
 
 export const historialService = {
   // Obtenir tots els historials amb paginació i cerca
   getAll: async (page: number = 1, limit: number = 10, search?: string) => {
-    const query: any = {};
+    const query: { [key: string]: unknown } = {};
 
     // Si ens passen un terme de cerca, busquem a l'ID de l'oferta
     // (com és un ObjectId, la cerca ha de ser exacta, o pots buscar dins de l'array de canvis)

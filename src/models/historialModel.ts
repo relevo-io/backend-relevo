@@ -2,8 +2,8 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface ICanvi {
   campo: string; // Nom del camp modificat
-  valorAnterior: any; // Valor anterior del camp
-  valorNuevo: any; // Nou valor del camp
+  valorAnterior: unknown; // Valor anterior del camp
+  valorNuevo: unknown; // Nou valor del camp
 }
 
 export interface IHistorial {

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { historialService } from '../services/historialService';
+import { historialService } from '../services/historialService.js';
 
 export const getHistorials = async (req: Request, res: Response) => {
   try {

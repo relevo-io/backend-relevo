@@ -278,14 +278,16 @@ export const obtenerOfertaPorId = async (id: string): Promise<IOferta | null> =>
   return { ...normalizeOferta(oferta), ownerRating } as IOferta;
 };
 
-const obtenerCambios = (ofertaOriginal: any, ofertaActualizada: any) => {
+const obtenerCambios = <T extends object, U extends object>(ofertaOriginal: T, ofertaActualizada: U): ICanvi[] => {
   const canvis: ICanvi[] = [];
+  const original = ofertaOriginal as Record<string, unknown>;
+  const actualizado = ofertaActualizada as Record<string, unknown>;
 
-  for (const llave in ofertaActualizada) {
+  for (const llave in actualizado) {
     if (['id', '_id', '__v', 'createdAt', 'updatedAt'].includes(llave)) continue;
 
-    const valorOriginal = ofertaOriginal[llave];
-    const valorNuevo = ofertaActualizada[llave];
+    const valorOriginal = original[llave];
+    const valorNuevo = actualizado[llave];
 
     const strOriginal = JSON.stringify(valorOriginal);
     const strNuevo = JSON.stringify(valorNuevo);
