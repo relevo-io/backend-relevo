@@ -72,7 +72,7 @@ describe('Stripe payments', () => {
         kind: 'offer_publication',
         offerDraft: {
           region: 'Barcelona',
-          sector: 'Technology',
+          sector: 'TECHNOLOGY',
           companyDescription: 'Software company with recurring revenue'
         }
       });
@@ -93,7 +93,7 @@ describe('Stripe payments', () => {
         kind: 'offer_publication',
         offerDraft: {
           region: 'Barcelona',
-          sector: 'Technology',
+          sector: 'TECHNOLOGY',
           companyDescription: 'Software company with recurring revenue'
         }
       });
@@ -155,7 +155,7 @@ describe('Stripe payments', () => {
       currency: 'eur',
       offerDraft: {
         region: 'Madrid',
-        sector: 'Retail',
+        sector: 'RETAIL',
         companyDescription: 'Neighborhood retail company'
       }
     });
