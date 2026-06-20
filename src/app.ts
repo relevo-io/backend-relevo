@@ -15,6 +15,7 @@ import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.js';
+import historialRoutes from './routes/historialRoutes.js';
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/storage', storageRoutes);
 app.use('/api/mentoring', mentoringRoutes);
 app.use('/api/alertas', alertaRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/historials', historialRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)
