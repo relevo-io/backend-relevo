@@ -46,8 +46,9 @@ export const getOfertas = asyncWrapper(
     res: Response
   ): Promise<void> => {
     const pagination = parsePagination(req.query.page, req.query.limit);
+    const isAdmin = req.user?.roles.includes('ADMIN') ?? false;
     const filters = {
-      excludeOwnerId: req.query.excludeOwnerId,
+      excludeOwnerId: req.user && !isAdmin ? req.user.id : req.query.excludeOwnerId,
       search: req.query.search,
       sector: req.query.sector,
       region: req.query.region,

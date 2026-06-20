@@ -97,6 +97,12 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
     throw new NotFoundError('Oferta no encontrada');
   }
 
+  const ownerId =
+    typeof oferta.owner === 'object' && '_id' in oferta.owner ? String(oferta.owner._id) : String(oferta.owner);
+  if (ownerId === interestedUserId) {
+    throw new ForbiddenError('No puedes solicitar tu propia oferta');
+  }
+
   const nueva = await solicitudService.crearSolicitud({
     opportunity: new Types.ObjectId(opportunityId),
     interestedUser: new Types.ObjectId(interestedUserId),

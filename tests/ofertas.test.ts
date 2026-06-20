@@ -85,6 +85,66 @@ describe('Ofertas API', () => {
     expect(Array.isArray(response.body)).toBe(true);
   });
 
+  it('should hide own offers from authenticated marketplace listings', async () => {
+    const ownOffer = await OfertaModel.create({
+      owner: new Types.ObjectId(ownerId),
+      region: 'Barcelona',
+      sector: 'Technology',
+      companyDescription: 'Owner marketplace offer'
+    });
+    const otherOffer = await OfertaModel.create({
+      owner: new Types.ObjectId(userId),
+      region: 'Madrid',
+      sector: 'Retail',
+      companyDescription: 'Another marketplace offer'
+    });
+
+    const unpaginated = await request(app).get('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`);
+    const paginated = await request(app)
+      .get('/api/ofertas?page=1&limit=12&search=marketplace')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(unpaginated.status).toBe(200);
+    expect(unpaginated.body.map((offer: { _id: string }) => offer._id)).not.toContain(String(ownOffer._id));
+    expect(unpaginated.body.map((offer: { _id: string }) => offer._id)).toContain(String(otherOffer._id));
+    expect(paginated.status).toBe(200);
+    expect(paginated.body.items.map((offer: { _id: string }) => offer._id)).not.toContain(String(ownOffer._id));
+    expect(paginated.body.items.map((offer: { _id: string }) => offer._id)).toContain(String(otherOffer._id));
+    expect(paginated.body.pagination.totalItems).toBe(1);
+  });
+
+  it('should reject requests to an offer owned by the interested user', async () => {
+    await UsuarioModel.findByIdAndUpdate(ownerId, { $addToSet: { roles: 'INTERESTED' } });
+    const ownerWithInterestedRole = await request(app).post('/api/auth/login').send({
+      email: TEST_OWNER.email,
+      password: TEST_OWNER.password
+    });
+
+    const ownOffer = await OfertaModel.create({
+      owner: new Types.ObjectId(ownerId),
+      region: 'Valencia',
+      sector: 'Services',
+      companyDescription: 'Self request prevention offer'
+    });
+
+    const response = await request(app)
+      .post('/api/solicitudes')
+      .set('Authorization', `Bearer ${ownerWithInterestedRole.body.accessToken}`)
+      .send({
+        opportunityId: String(ownOffer._id),
+        bio: 'Owner trying to request their own offer',
+        professionalBackground: 'Business owner',
+        preferredRegions: ['Valencia'],
+        availableCapital: 100000,
+        financingNeeded: false,
+        ndaAccepted: true
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe('No puedes solicitar tu propia oferta');
+    expect(await SolicitudModel.countDocuments({ opportunity: ownOffer._id })).toBe(0);
+  });
+
   it('should allow owner to update their offer', async () => {
     // Create an offer first
     await grantOwnerCredit();
