@@ -6,7 +6,8 @@ const objectIdRegex = /^[a-fA-F0-9]{24}$/;
 export const createCheckoutSessionSchema = z
   .object({
     kind: z.enum(['offer_publication', 'pro_activation']),
-    offerDraft: createOfertaSchema.optional()
+    offerDraft: createOfertaSchema.optional(),
+    returnUrlBase: z.string().url('La URL de retorno no es valida').optional()
   })
   .superRefine((data, ctx) => {
     if (data.kind === 'offer_publication' && !data.offerDraft) {

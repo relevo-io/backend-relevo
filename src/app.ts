@@ -36,8 +36,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests without origin (e.g. Postman), the configured frontend URL,
       // or any localhost origin (needed for Flutter Web which uses a dynamic port in dev).
-      const isLocalhost = origin && /^http:\/\/localhost(:\d+)?$/.test(origin);
-      if (!origin || origin === config.frontendUrl || origin === config.apiUrl || isLocalhost) {
+      const isLocalhost = origin && /^https?:\/\/localhost(:\d+)?$/.test(origin);
+      const isLoopback = origin && /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+      const isIpv6Loopback = origin && /^https?:\/\/\[::1\](:\d+)?$/.test(origin);
+      if (
+        !origin ||
+        origin === config.frontendUrl ||
+        origin === config.apiUrl ||
+        isLocalhost ||
+        isLoopback ||
+        isIpv6Loopback
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

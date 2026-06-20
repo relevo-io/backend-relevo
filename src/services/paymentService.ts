@@ -39,6 +39,7 @@ interface CreateCheckoutSessionInput {
   roles: string[];
   kind: PaymentKind;
   offerDraft?: OfferDraftSnapshot;
+  returnUrlBase?: string;
 }
 
 const assertCheckoutPermissions = (kind: PaymentKind, roles: string[]): void => {
@@ -51,11 +52,47 @@ const assertCheckoutPermissions = (kind: PaymentKind, roles: string[]): void => 
   }
 };
 
-const buildSuccessUrl = (paymentSessionId: string): string =>
-  `${config.frontendUrl}/pago/resultado?paymentSessionId=${paymentSessionId}`;
+const isAllowedReturnOrigin = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    const normalizedOrigin = url.origin;
+    const configuredOrigins = [config.frontendUrl, config.apiUrl].filter(Boolean);
 
-const buildCancelUrl = (paymentSessionId: string): string =>
-  `${config.frontendUrl}/pago/resultado?paymentSessionId=${paymentSessionId}&canceled=1`;
+    if (configuredOrigins.includes(normalizedOrigin)) {
+      return true;
+    }
+
+    return (
+      /^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin) ||
+      /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin) ||
+      /^https?:\/\/\[::1\](:\d+)?$/.test(normalizedOrigin)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const resolveReturnUrlBase = (returnUrlBase?: string): string => {
+  if (returnUrlBase) {
+    if (!isAllowedReturnOrigin(returnUrlBase)) {
+      throw new ValidationError('La URL de retorno no esta permitida');
+    }
+
+    return returnUrlBase.replace(/\/+$/, '');
+  }
+
+  if (!config.frontendUrl) {
+    throw new ValidationError('FRONTEND_URL no esta configurado');
+  }
+
+  return config.frontendUrl.replace(/\/+$/, '');
+};
+
+const buildSuccessUrl = (paymentSessionId: string, returnUrlBase: string): string =>
+  `${returnUrlBase}/pago/resultado?paymentSessionId=${paymentSessionId}`;
+
+const buildCancelUrl = (paymentSessionId: string, returnUrlBase: string): string =>
+  `${returnUrlBase}/pago/resultado?paymentSessionId=${paymentSessionId}&canceled=1`;
 
 const toOfferPayload = (userId: string, draft: OfferDraftSnapshot): Partial<IOferta> =>
   ({
@@ -67,7 +104,8 @@ export const createCheckoutSessionForPayment = async ({
   userId,
   roles,
   kind,
-  offerDraft
+  offerDraft,
+  returnUrlBase
 }: CreateCheckoutSessionInput): Promise<{ checkoutUrl: string; paymentSessionId: string }> => {
   assertCheckoutPermissions(kind, roles);
 
@@ -75,9 +113,7 @@ export const createCheckoutSessionForPayment = async ({
     throw new ValidationError('El borrador de la oferta es obligatorio');
   }
 
-  if (!config.frontendUrl) {
-    throw new ValidationError('FRONTEND_URL no esta configurado');
-  }
+  const resolvedReturnUrlBase = resolveReturnUrlBase(returnUrlBase);
 
   const amount = PAYMENT_PRICES[kind];
   const currency = config.stripe.currency;
@@ -100,8 +136,8 @@ export const createCheckoutSessionForPayment = async ({
       amount,
       currency,
       ...PAYMENT_LABELS[kind],
-      successUrl: buildSuccessUrl(paymentSessionId),
-      cancelUrl: buildCancelUrl(paymentSessionId),
+      successUrl: buildSuccessUrl(paymentSessionId, resolvedReturnUrlBase),
+      cancelUrl: buildCancelUrl(paymentSessionId, resolvedReturnUrlBase),
       metadata: {
         paymentSessionId,
         userId,
