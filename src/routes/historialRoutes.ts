@@ -55,7 +55,7 @@ const router = Router();
 
 /**
  * @openapi
- * /api/historials:
+ * /api/historial:
  *   get:
  *     summary: Obté la llista de tots els historials amb paginació i cerca
  *     tags: [Historials]

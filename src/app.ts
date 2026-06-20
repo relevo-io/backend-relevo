@@ -92,7 +92,7 @@ app.use('/api/mentoring', mentoringRoutes);
 app.use('/api/alertas', alertaRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/historiales', historialRoutes);
+app.use('/api/historial', historialRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)
