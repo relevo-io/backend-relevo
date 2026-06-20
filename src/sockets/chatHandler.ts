@@ -6,6 +6,7 @@ import { IMensaje } from '../models/mensajeModel.js';
 import { createNotificationAndSendPush } from '../services/notificationService.js';
 import { IUsuario } from '../models/usuarioModel.js';
 import { NotificacionModel } from '../models/notificacionModel.js';
+import { emitChatUpdated } from './realtimeEvents.js';
 
 // ─────────────────────────────────────────────
 //  Constants
@@ -234,6 +235,8 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
           message: mensajePopulated
         });
 
+        await emitChatUpdated(chatId);
+
         // Send Push notification using the secondary FCM app
         try {
           // Verificar si el receptor ya está conectado a la sala de chat en tiempo real
@@ -338,6 +341,8 @@ export function registerChatHandlers(io: SocketIOServer, socket: Socket): void {
         { userId, type: 'chat', 'metadata.chatId': chatId, read: false },
         { $set: { read: true } }
       );
+
+      await emitChatUpdated(chatId);
     } catch (err) {
       logger.error({ err }, '[Socket] mark_read error');
     }

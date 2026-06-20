@@ -237,6 +237,21 @@ export const obtenerSolicitudConDetalles = async (id: string): Promise<ISolicitu
   return await SolicitudModel.findById(id).populate('opportunity').populate('interestedUser').lean();
 };
 
+export const obtenerSolicitudRealtime = async (id: string): Promise<ISolicitud | null> => {
+  const solicitud = await SolicitudModel.findById(id)
+    .populate('interestedUser', 'fullName email bio professionalBackground cv')
+    .populate('owner', 'fullName email')
+    .populate('opportunity', 'companyDescription sector region')
+    .lean()
+    .exec();
+
+  if (!solicitud) return null;
+
+  const withInterestedRatings = await addInterestedRatings([solicitud]);
+  const withOwnerRatings = await addOwnerRatings(withInterestedRatings);
+  return withOwnerRatings[0] ?? null;
+};
+
 export const eliminarSolicitudesPorIds = async (ids: string[]): Promise<number> => {
   const result = await SolicitudModel.deleteMany({ _id: { $in: ids } });
   return result.deletedCount ?? 0;

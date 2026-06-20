@@ -1,5 +1,13 @@
 import express from 'express';
-import { login, logout, refreshToken, getMe, firebaseLogin } from '../controllers/authController.js';
+import {
+  login,
+  logout,
+  refreshToken,
+  getMe,
+  firebaseLogin,
+  getGitHubAuthorizeUrl,
+  oauthLogin
+} from '../controllers/authController.js';
 import { z } from 'zod';
 import { validate } from '../middlewares/validatorMiddleware.js';
 import { authenticateToken } from '../middlewares/auth.js';
@@ -11,7 +19,16 @@ const loginSchema = z.object({
   password: z.string().min(1)
 });
 const firebaseLoginSchema = z.object({
-  idToken: z.string().min(1)
+  idToken: z.string().min(1),
+  providerAccessToken: z.string().min(1).optional()
+});
+const oauthStartSchema = z.object({
+  redirectUri: z.string().url(),
+  state: z.string().min(1)
+});
+const oauthLoginSchema = z.object({
+  code: z.string().min(1),
+  redirectUri: z.string().url()
 });
 
 /**
@@ -46,6 +63,8 @@ const firebaseLoginSchema = z.object({
  */
 router.post('/login', validate({ body: loginSchema }), login);
 router.post('/firebase', validate({ body: firebaseLoginSchema }), firebaseLogin);
+router.post('/oauth/github/start', validate({ body: oauthStartSchema }), getGitHubAuthorizeUrl);
+router.post('/oauth/:provider', validate({ body: oauthLoginSchema }), oauthLogin);
 
 /**
  * @openapi

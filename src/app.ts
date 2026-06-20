@@ -11,10 +11,12 @@ import storageRoutes from './routes/storageRoutes.js';
 import mentoringRoutes from './routes/mentoringRoutes.js';
 import alertaRoutes from './routes/alertaRoutes.js';
 import notificacionRoutes from './routes/notificacionRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.js';
+import { handleStripeWebhook } from './controllers/paymentController.js';
 
 const app = express();
 
@@ -44,6 +46,8 @@ app.use(
     credentials: true
   })
 );
+
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // Built-in middleware to parse incoming requests with JSON payloads
 app.use(express.json());
@@ -77,6 +81,7 @@ app.use('/api/storage', storageRoutes);
 app.use('/api/mentoring', mentoringRoutes);
 app.use('/api/alertas', alertaRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/payments', paymentRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)

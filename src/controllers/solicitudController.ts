@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { ISolicitud } from '../models/solicitudModel.js';
 import * as solicitudService from '../services/solicitudService.js';
 import * as ofertaService from '../services/ofertaService.js';
+import * as chatService from '../services/chatService.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotFoundError, UnauthorizedError, ValidationError, ForbiddenError, AppError } from '../utils/AppError.js';
@@ -11,6 +12,7 @@ import { solicitarAnalisisIA } from '../services/aiService.js';
 import { logger } from '../config.js';
 import { IUsuario, UsuarioModel } from '../models/usuarioModel.js';
 import { createNotificationAndSendPush } from '../services/notificationService.js';
+import { emitChatUpdated, emitSolicitudDeleted, emitSolicitudUpdated } from '../sockets/realtimeEvents.js';
 
 const parsePagination = (page?: string, limit?: string) => {
   if (!page && !limit) return null;
@@ -127,6 +129,8 @@ export const createSolicitud = asyncWrapper(async (req: AuthRequest, res: Respon
       },
       'newApplications'
     );
+
+    await emitSolicitudUpdated(String(resultado._id));
   }
 
   res.status(201).json(resultado);
@@ -139,6 +143,8 @@ export const updateSolicitud = asyncWrapper(
       throw new NotFoundError('Solicitud no encontrada');
     }
 
+    await emitSolicitudUpdated(req.params.id);
+
     res.status(200).json(solicitudActualizada);
   }
 );
@@ -148,6 +154,13 @@ export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>,
   if (!eliminada) {
     throw new NotFoundError('Solicitud no encontrada');
   }
+
+  emitSolicitudDeleted({
+    solicitudId: req.params.id,
+    opportunityId: String(eliminada.opportunity),
+    ownerId: String(eliminada.owner),
+    interestedUserId: String(eliminada.interestedUser)
+  });
 
   res.status(204).send();
 });
@@ -166,6 +179,7 @@ export const patchEstadoSolicitud = asyncWrapper(
         if (solicitudConDetalles) {
           const candidateId = String(solicitudConDetalles.interestedUser._id);
           const ownerId = String(solicitudConDetalles.owner);
+          const opportunityId = String(solicitudConDetalles.opportunity._id);
 
           const owner = await UsuarioModel.findById(ownerId).select('fullName').lean();
           const ownerName = owner?.fullName || 'El propietario';
@@ -189,11 +203,23 @@ export const patchEstadoSolicitud = asyncWrapper(
             },
             'applicationStatus'
           );
+
+          const relatedChat = await chatService.actualizarEstadoChatPorOfertaEInteresado(
+            opportunityId,
+            candidateId,
+            req.body.status === 'ACCEPTED' ? 'APPROVED' : 'REJECTED'
+          );
+
+          if (relatedChat?._id) {
+            await emitChatUpdated(String(relatedChat._id));
+          }
         }
       } catch (err) {
         logger.error(err, 'Error al enviar notificacion push de estado de solicitud');
       }
     }
+
+    await emitSolicitudUpdated(req.params.id);
 
     res.status(200).json(solicitudActualizada);
   }
@@ -206,7 +232,18 @@ export const deleteMultiple = asyncWrapper(async (req: Request, res: Response): 
     throw new ValidationError('Se requiere un array de IDs');
   }
 
+  const solicitudes = await Promise.all(ids.map((id) => solicitudService.obtenerSolicitudPorId(id)));
   await solicitudService.eliminarSolicitudesPorIds(ids);
+
+  solicitudes.forEach((solicitud, index) => {
+    if (!solicitud) return;
+    emitSolicitudDeleted({
+      solicitudId: String(ids[index]),
+      opportunityId: String(solicitud.opportunity),
+      ownerId: String(solicitud.owner),
+      interestedUserId: String(solicitud.interestedUser)
+    });
+  });
 
   res.status(200).json({ message: 'Solicitudes eliminadas correctamente' });
 });
@@ -244,6 +281,8 @@ export const guardarCvKey = asyncWrapper(async (req: AuthRequest, res: Response)
   }
 
   const updated = await solicitudService.actualizarSolicitud(req.params['id'], { cvKey });
+
+  await emitSolicitudUpdated(req.params['id']);
 
   res.status(200).json(updated);
 });
@@ -293,6 +332,7 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
   await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
     estadoAnalisis: 'EN_PROCESO'
   });
+  await emitSolicitudUpdated(solicitud._id!.toString());
 
   try {
     // Obtener idioma del usuario que solicita el análisis
@@ -306,6 +346,8 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
       estadoAnalisis: 'COMPLETADO',
       resultadoIa: resultado
     });
+
+    await emitSolicitudUpdated(solicitud._id!.toString());
 
     // Enviar notificación push al reclutador (el usuario que solicitó el análisis)
     const solicitudConDetalles = await solicitudService.obtenerSolicitudConDetalles(solicitud._id!.toString());
@@ -330,6 +372,8 @@ export const analizarCvConIa = asyncWrapper(async (req: AuthRequest, res: Respon
     await solicitudService.actualizarSolicitud(solicitud._id!.toString(), {
       estadoAnalisis: 'ERROR'
     });
+
+    await emitSolicitudUpdated(solicitud._id!.toString());
 
     logger.error({ err: error, solicitudId: solicitud._id }, 'Error en el proceso de análisis de IA');
 

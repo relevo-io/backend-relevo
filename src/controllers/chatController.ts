@@ -5,6 +5,7 @@ import * as ratingService from '../services/ratingService.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/AppError.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import { NotificacionModel } from '../models/notificacionModel.js';
+import { emitChatUpdated } from '../sockets/realtimeEvents.js';
 
 // ─────────────────────────────────────────────
 //  POST /api/chats
@@ -44,6 +45,7 @@ export const getOrCreateChat = asyncWrapper(async (req: AuthRequest, res: Respon
 
   // Upsert: un solo chat por par (oferta + interested)
   const chat = await chatService.crearOObtenerChat(ofertaId, ownerId, targetInterestedId, solicitudAceptada);
+  await emitChatUpdated(String(chat._id));
 
   const statusCode = chat.createdAt?.getTime() === chat.updatedAt?.getTime() ? 201 : 200;
   res.status(statusCode).json(chat);
@@ -106,6 +108,8 @@ export const markChatAsRead = asyncWrapper(async (req: AuthRequest, res: Respons
     { $set: { read: true } }
   );
 
+  await emitChatUpdated(chatId);
+
   res.status(200).json({ ok: true });
 });
 
@@ -131,6 +135,7 @@ export const setChatReadOnly = asyncWrapper(async (req: AuthRequest, res: Respon
   }
 
   await chatService.marcarChatSoloLectura(chatId);
+  await emitChatUpdated(chatId);
   res.status(200).json({ ok: true });
 });
 
@@ -158,6 +163,7 @@ export const updateChatStatus = asyncWrapper(async (req: AuthRequest, res: Respo
   }
 
   const updated = await chatService.actualizarEstadoChat(chatId, status);
+  await emitChatUpdated(chatId);
 
   res.status(200).json(updated);
 });
@@ -187,6 +193,42 @@ export const closeDeal = asyncWrapper(async (req: AuthRequest, res: Response): P
     throw new ForbiddenError('No autorizado');
   }
 
+  await emitChatUpdated(chatId);
+
+  res.status(200).json(updated);
+});
+
+export const setPostCloseGuidanceDecision = asyncWrapper(async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { chatId } = req.params;
+  const { decision } = req.body as { decision?: 'ACCEPTED' | 'DISMISSED' };
+
+  if (decision !== 'ACCEPTED' && decision !== 'DISMISSED') {
+    throw new ValidationError('Decision no válida');
+  }
+
+  const chat = await chatService.obtenerChatBasicoPorId(chatId);
+  if (!chat) {
+    throw new NotFoundError('Chat no encontrado');
+  }
+
+  const isOwner = String(chat.owner) === userId;
+  const isInterested = String(chat.interested) === userId;
+  if (!isOwner && !isInterested) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  if (!chat.closedAt) {
+    throw new ValidationError('La guía posterior solo está disponible cuando la venta ya se ha cerrado');
+  }
+
+  const updated = await chatService.registrarDecisionGuiadoPostCierre(chatId, userId, decision);
+  if (!updated) {
+    throw new ForbiddenError('No autorizado');
+  }
+
+  await emitChatUpdated(chatId);
+
   res.status(200).json(updated);
 });
 
@@ -207,5 +249,6 @@ export const rateChat = asyncWrapper(async (req: AuthRequest, res: Response): Pr
   }
 
   const rating = await ratingService.valorarChat(chatId, userId, score, comment);
+  await emitChatUpdated(chatId);
   res.status(200).json(rating);
 });
