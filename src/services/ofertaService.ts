@@ -324,6 +324,20 @@ export const actualizarOferta = async (id: string, data: Partial<IOferta>): Prom
 };
 
 export const eliminarOferta = async (id: string): Promise<IOferta | null> => {
+  const oferta = await OfertaModel.findById(id).lean();
+  if (!oferta) {
+    return null;
+  }
+  await Historial.create({
+    ofertaId: id,
+    canvis: [
+      {
+        campo: 'Estado de la oferta',
+        valorAnterior: 'Activa',
+        valorNuevo: 'ELIMINADA 🗑️'
+      }
+    ]
+  });
   return await OfertaModel.findByIdAndDelete(id).lean();
 };
 
