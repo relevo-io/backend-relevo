@@ -167,6 +167,17 @@ export const deleteSolicitud = asyncWrapper(async (req: Request<{ id: string }>,
 
 export const patchEstadoSolicitud = asyncWrapper(
   async (req: Request<{ id: string }, {}, Pick<ISolicitud, 'status'>>, res: Response): Promise<void> => {
+    // Evitar procesar o notificar por duplicado si el estado ya es el solicitado
+    const solicitudPrevia = await solicitudService.obtenerSolicitudPorId(req.params.id);
+    if (!solicitudPrevia) {
+      throw new NotFoundError('Solicitud no encontrada');
+    }
+
+    if (solicitudPrevia.status === req.body.status) {
+      res.status(200).json(solicitudPrevia);
+      return;
+    }
+
     const solicitudActualizada = await solicitudService.actualizarEstadoSolicitud(req.params.id, req.body.status);
     if (!solicitudActualizada) {
       throw new NotFoundError('Solicitud no encontrada');
