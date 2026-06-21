@@ -103,7 +103,7 @@ router.get('/', getHistorials);
 
 /**
  * @openapi
- * /api/historials/{id}:
+ * /api/historial/{id}:
  *   get:
  *     summary: Obté un historial específic per ID
  *     tags: [Historials]
@@ -130,7 +130,7 @@ router.get('/:id', getHistorialById);
 
 /**
  * @openapi
- * /api/historials/{id}:
+ * /api/historial/{id}:
  *   delete:
  *     summary: Elimina un registre d'historial per ID
  *     tags: [Historials]

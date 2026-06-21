@@ -124,25 +124,180 @@ router.get('/', optionalAuthenticateToken, validate({ query: ofertaQuerySchema }
  *         description: Llista d'ofertes pròpies recuperada correctament
  */
 router.get('/me', authenticateToken, authorizeRoles('OWNER', 'ADMIN'), ofertaController.getMisOfertas);
+/**
+ * @openapi
+ * /api/ofertas/me/analytics-summary:
+ *   get:
+ *     summary: Obté el resum analític global de totes les ofertes de l'usuari (visites, favorits, etc.)
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Resum analític obtingut
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalOffers:
+ *                   type: integer
+ *                   example: 3
+ *                 totalViews:
+ *                   type: integer
+ *                   example: 154
+ *                 totalFavorites:
+ *                   type: integer
+ *                   example: 12
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get(
   '/me/analytics-summary',
   authenticateToken,
   authorizeRoles('OWNER', 'ADMIN'),
   ofertaController.getMisOfertasAnalyticsSummary
 );
+
+/**
+ * @openapi
+ * /api/ofertas/favorites:
+ *   get:
+ *     summary: Llista totes les ofertes marcades com a preferides per l'usuari actual
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista de favorits recuperada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Oferta'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/favorites', authenticateToken, ofertaController.getMisFavoritas);
+
+/**
+ * @openapi
+ * /api/ofertas/publication-credit/purchase:
+ *   post:
+ *     summary: Inicia la compra d'un crèdit de publicació per a una nova oferta (Stripe Checkout)
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sessió de checkout creada, retorna URL de redirecció a Stripe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   format: uri
+ *                   example: 'https://checkout.stripe.com/pay/cs_test...'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post(
   '/publication-credit/purchase',
   authenticateToken,
   authorizeRoles('OWNER', 'ADMIN'),
   ofertaController.purchasePublicationCredit
 );
+
+/**
+ * @openapi
+ * /api/ofertas/{id}/favorite:
+ *   post:
+ *     summary: Afegeix una oferta a la llista de preferides de l'usuari actual
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'oferta a marcar com a preferida
+ *     responses:
+ *       200:
+ *         description: Oferta afegida als preferits correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Oferta afegida als preferits'
+ *       400:
+ *         description: ID d'oferta invàlid
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post(
   '/:id/favorite',
   authenticateToken,
   validate({ params: ofertaIdParamsSchema }),
   ofertaController.addOfertaFavorita
 );
+
+/**
+ * @openapi
+ * /api/ofertas/{id}/favorite:
+ *   delete:
+ *     summary: Elimina una oferta de la llista de preferides de l'usuari actual
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'oferta a desmarcar com a preferida
+ *     responses:
+ *       200:
+ *         description: Oferta eliminada dels preferits correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Oferta eliminada dels preferits'
+ *       400:
+ *         description: ID d'oferta invàlid
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.delete(
   '/:id/favorite',
   authenticateToken,
@@ -150,6 +305,37 @@ router.delete(
   ofertaController.removeOfertaFavorita
 );
 
+/**
+ * @openapi
+ * /api/ofertas/{id}/view:
+ *   post:
+ *     summary: Registra una visualització d'una oferta per part d'un usuari (anònim o registrat)
+ *     tags: [Ofertas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'oferta a visualitzar
+ *     responses:
+ *       200:
+ *         description: Visualització registrada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: ID d'oferta invàlid
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post(
   '/:id/view',
   optionalAuthenticateToken,
@@ -157,6 +343,49 @@ router.post(
   ofertaController.registerOfertaView
 );
 
+/**
+ * @openapi
+ * /api/ofertas/{id}/analytics:
+ *   get:
+ *     summary: Obté les dades analítiques detallades d'una oferta específica (visualitzacions acumulades, etc.)
+ *     tags: [Ofertas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'oferta de la qual es volen les analítiques
+ *     responses:
+ *       200:
+ *         description: Dades analítiques recuperades
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 views:
+ *                   type: integer
+ *                   example: 45
+ *                 favorites:
+ *                   type: integer
+ *                   example: 3
+ *                 chatsCount:
+ *                   type: integer
+ *                   example: 2
+ *       400:
+ *         description: ID d'oferta invàlid
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get(
   '/:id/analytics',
   authenticateToken,

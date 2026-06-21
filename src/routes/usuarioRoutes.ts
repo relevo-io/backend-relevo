@@ -134,10 +134,120 @@ const router = Router();
  */
 router.get('/', authenticateToken, authorizeRoles('ADMIN'), usuarioController.getUsuarios);
 
+/**
+ * @openapi
+ * /api/usuarios/fcm-token:
+ *   post:
+ *     summary: Registra un nou token de Firebase Cloud Messaging (FCM) per a l'usuari actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 minLength: 10
+ *                 description: Token FCM generat pel dispositiu client
+ *                 example: 'fcm_token_xyz_1234567890...'
+ *     responses:
+ *       200:
+ *         description: Token registrat correctament
+ *       400:
+ *         description: Paràmetres invàlids o token massa curt
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/fcm-token', authenticateToken, validate({ body: fcmTokenSchema }), usuarioController.registerFcmToken);
 
+/**
+ * @openapi
+ * /api/usuarios/fcm-token/{token}:
+ *   delete:
+ *     summary: Elimina/desregistra un token FCM de l'usuari actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: El token FCM a eliminar
+ *     responses:
+ *       200:
+ *         description: Token eliminat correctament
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.delete('/fcm-token/:token', authenticateToken, usuarioController.unregisterFcmToken);
 
+/**
+ * @openapi
+ * /api/usuarios/me/notification-preferences:
+ *   patch:
+ *     summary: Actualitza les preferències de notificació push de l'usuari actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newMessages
+ *               - applicationStatus
+ *               - newApplications
+ *               - cvAnalysis
+ *               - offerAlerts
+ *             properties:
+ *               newMessages:
+ *                 type: boolean
+ *                 description: Notificacions de nous missatges al xat
+ *                 example: true
+ *               applicationStatus:
+ *                 type: boolean
+ *                 description: Notificacions quan canvia l'estat d'una sol·licitud
+ *                 example: true
+ *               newApplications:
+ *                 type: boolean
+ *                 description: Notificacions de noves sol·licituds rebudes a les meves ofertes
+ *                 example: true
+ *               cvAnalysis:
+ *                 type: boolean
+ *                 description: Notificacions quan finalitza l'anàlisi de CV
+ *                 example: true
+ *               offerAlerts:
+ *                 type: boolean
+ *                 description: Notificacions per match de noves alertes de cerca
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Preferències de notificació actualitzades correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Usuario'
+ *       400:
+ *         description: Paràmetres incorrectes o camps de preferències invàlids
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.patch(
   '/me/notification-preferences',
   authenticateToken,
@@ -145,6 +255,65 @@ router.patch(
   usuarioController.updateNotificationPreferences
 );
 
+/**
+ * @openapi
+ * /api/usuarios/me/marketplace-preferences:
+ *   patch:
+ *     summary: Actualitza les preferències de filtre del mercat (marketplace) de l'usuari actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               preferredRegions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ['Catalunya', 'Madrid']
+ *               preferredSectors:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ['TECHNOLOGY', 'SERVICES']
+ *               preferredEmployeeRanges:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
+ *                 example: ['11_25', '26_50']
+ *               preferredRevenueRanges:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *                 example: ['BETWEEN_100K_500K']
+ *               preferredCreationYearFrom:
+ *                 type: integer
+ *                 minimum: 1800
+ *                 example: 2010
+ *               preferredCreationYearTo:
+ *                 type: integer
+ *                 minimum: 1800
+ *                 example: 2024
+ *     responses:
+ *       200:
+ *         description: Preferències de marketplace actualitzades correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Usuario'
+ *       400:
+ *         description: Paràmetres invàlids (per exemple, any d'inici superior a l'any de fi)
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.patch(
   '/me/marketplace-preferences',
   authenticateToken,
@@ -153,6 +322,26 @@ router.patch(
   usuarioController.updateMarketplacePreferences
 );
 
+/**
+ * @openapi
+ * /api/usuarios/me/pro/activate:
+ *   post:
+ *     summary: Activa el pla PRO per a l'usuari actual (de forma directa / simulació o processament manual)
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Pla PRO activat correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Usuario'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post(
   '/me/pro/activate',
   authenticateToken,
@@ -160,6 +349,28 @@ router.post(
   usuarioController.activateProPlan
 );
 
+/**
+ * @openapi
+ * /api/usuarios/me/ratings:
+ *   get:
+ *     summary: Obté totes les valoracions rebudes per l'usuari actual en les seves vendes o compres
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Llista de valoracions obtinguda correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Rating'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/me/ratings', authenticateToken, usuarioController.getMyRatings);
 
 /**
