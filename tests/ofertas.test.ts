@@ -55,7 +55,7 @@ describe('Ofertas API', () => {
 
     const response = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Catalonia',
-      sector: 'Technology',
+      sector: 'TECHNOLOGY',
       revenueRange: 'BETWEEN_100K_500K',
       owner: ownerId,
       creationYear: 2020,
@@ -71,7 +71,7 @@ describe('Ofertas API', () => {
   it('should deny an INTERESTED user from creating an offer', async () => {
     const response = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${userToken}`).send({
       region: 'Madrid',
-      sector: 'Hospitality',
+      sector: 'HOSPITALITY',
       owner: ownerId,
       companyDescription: 'Nice restaurant'
     });
@@ -89,13 +89,13 @@ describe('Ofertas API', () => {
     const ownOffer = await OfertaModel.create({
       owner: new Types.ObjectId(ownerId),
       region: 'Barcelona',
-      sector: 'Technology',
+      sector: 'TECHNOLOGY',
       companyDescription: 'Owner marketplace offer'
     });
     const otherOffer = await OfertaModel.create({
       owner: new Types.ObjectId(userId),
       region: 'Madrid',
-      sector: 'Retail',
+      sector: 'RETAIL',
       companyDescription: 'Another marketplace offer'
     });
 
@@ -123,7 +123,7 @@ describe('Ofertas API', () => {
     const ownOffer = await OfertaModel.create({
       owner: new Types.ObjectId(ownerId),
       region: 'Valencia',
-      sector: 'Services',
+      sector: 'SERVICES',
       companyDescription: 'Self request prevention offer'
     });
 
@@ -150,7 +150,7 @@ describe('Ofertas API', () => {
     await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Valencia',
-      sector: 'Agriculture',
+      sector: 'EDUCATION',
       owner: ownerId,
       companyDescription: 'Orange farm'
     });
@@ -158,11 +158,11 @@ describe('Ofertas API', () => {
     const id = newOferta.body._id;
 
     const response = await request(app).put(`/api/ofertas/${id}`).set('Authorization', `Bearer ${ownerToken}`).send({
-      sector: 'Sustainable Agriculture'
+      sector: 'LOGISTICS'
     });
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('sector', 'Sustainable Agriculture');
+    expect(response.body).toHaveProperty('sector', 'LOGISTICS');
   });
 
   it('should deny another user from deleting an offer they do not own', async () => {
@@ -170,7 +170,7 @@ describe('Ofertas API', () => {
     await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Galicia',
-      sector: 'Fishing',
+      sector: 'INDUSTRIAL',
       owner: ownerId,
       companyDescription: 'Fishing company'
     });
@@ -186,7 +186,7 @@ describe('Ofertas API', () => {
     await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Sevilla',
-      sector: 'Hospitality',
+      sector: 'HOSPITALITY',
       owner: ownerId,
       companyDescription: 'Tapas bar with recurring clients'
     });
@@ -209,7 +209,7 @@ describe('Ofertas API', () => {
     await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Mallorca',
-      sector: 'Hospitality',
+      sector: 'HOSPITALITY',
       owner: ownerId,
       companyDescription: 'Boutique hotel near the coast'
     });
@@ -238,7 +238,7 @@ describe('Ofertas API', () => {
     await grantOwnerCredit();
     const newOferta = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Bilbao',
-      sector: 'Services',
+      sector: 'SERVICES',
       owner: ownerId,
       companyDescription: 'Maintenance services company'
     });

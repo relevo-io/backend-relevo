@@ -41,7 +41,7 @@ describe('Monetization rules', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         region: overrides?.region ?? 'Barcelona',
-        sector: overrides?.sector ?? 'Technology',
+        sector: overrides?.sector ?? 'TECHNOLOGY',
         owner: ownerId,
         companyDescription: overrides?.companyDescription ?? 'Profitable software business'
       });
@@ -51,7 +51,7 @@ describe('Monetization rules', () => {
     OfertaModel.create({
       owner: new Types.ObjectId(ownerId),
       region: `Region ${index}`,
-      sector: index === 4 ? 'Services' : 'Technology',
+      sector: index === 4 ? 'SERVICES' : 'TECHNOLOGY',
       employeeRange: index % 2 === 0 ? '11_25' : '26_50',
       revenueRange: index % 2 === 0 ? 'BETWEEN_100K_500K' : 'BETWEEN_500K_1M',
       creationYear: 2015 + index,
@@ -61,7 +61,7 @@ describe('Monetization rules', () => {
   it('should reject publishing when the owner has no credit', async () => {
     const response = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Madrid',
-      sector: 'Retail',
+      sector: 'RETAIL',
       owner: ownerId,
       companyDescription: 'Established local business'
     });
@@ -77,7 +77,7 @@ describe('Monetization rules', () => {
 
     const created = await request(app).post('/api/ofertas').set('Authorization', `Bearer ${ownerToken}`).send({
       region: 'Madrid',
-      sector: 'Retail',
+      sector: 'RETAIL',
       owner: ownerId,
       companyDescription: 'Established local business'
     });
@@ -137,12 +137,12 @@ describe('Monetization rules', () => {
   it('should block a second request within 7 days for a free user and remove the limit for Pro', async () => {
     const firstOffer = await createOfferWithCredit({
       region: 'Bilbao',
-      sector: 'Services',
+      sector: 'SERVICES',
       companyDescription: 'Offer one'
     });
     const secondOffer = await createOfferWithCredit({
       region: 'Sevilla',
-      sector: 'Retail',
+      sector: 'RETAIL',
       companyDescription: 'Offer two'
     });
 
@@ -179,7 +179,7 @@ describe('Monetization rules', () => {
 
     const thirdOffer = await createOfferWithCredit({
       region: 'Valencia',
-      sector: 'Technology',
+      sector: 'TECHNOLOGY',
       companyDescription: 'Offer three'
     });
 
@@ -199,7 +199,7 @@ describe('Monetization rules', () => {
       {
         owner: new Types.ObjectId(ownerId),
         region: 'Barcelona',
-        sector: 'Technology',
+        sector: 'TECHNOLOGY',
         employeeRange: '11_25',
         revenueRange: 'BETWEEN_100K_500K',
         creationYear: 2018,
@@ -208,7 +208,7 @@ describe('Monetization rules', () => {
       {
         owner: new Types.ObjectId(ownerId),
         region: 'Madrid',
-        sector: 'Retail',
+        sector: 'RETAIL',
         employeeRange: '51_100',
         revenueRange: 'OVER_5M',
         creationYear: 2005,
@@ -220,7 +220,7 @@ describe('Monetization rules', () => {
 
     const filtered = await request(app)
       .get(
-        '/api/ofertas?page=1&limit=12&sector=Technology&region=Barcelona&employeeRange=11_25&revenueRange=BETWEEN_100K_500K&creationYearFrom=2015&creationYearTo=2020'
+        '/api/ofertas?page=1&limit=12&sector=TECHNOLOGY&region=Barcelona&employeeRange=11_25&revenueRange=BETWEEN_100K_500K&creationYearFrom=2015&creationYearTo=2020'
       )
       .set('Authorization', `Bearer ${userToken}`);
 
