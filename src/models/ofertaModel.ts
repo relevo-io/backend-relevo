@@ -10,6 +10,17 @@ export const revenueRanges = [
 
 export const employeeRanges = ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS'] as const;
 
+export const sectors = [
+  'TECHNOLOGY',
+  'HOSPITALITY',
+  'SERVICES',
+  'INDUSTRIAL',
+  'RETAIL',
+  'HEALTHCARE',
+  'LOGISTICS',
+  'EDUCATION'
+] as const;
+
 /**
  * @openapi
  * components:
@@ -73,7 +84,7 @@ export const employeeRanges = ['1_5', '6_10', '11_25', '26_50', '51_100', '100_P
 export interface IOferta {
   _id?: Types.ObjectId;
   region: string;
-  sector: string;
+  sector: (typeof sectors)[number];
   revenueRange?: (typeof revenueRanges)[number];
   owner: Types.ObjectId;
   creationYear?: number;
@@ -101,6 +112,7 @@ const ofertaSchema = new Schema<IOferta>(
     sector: {
       type: String,
       required: true,
+      enum: sectors,
       trim: true
     },
     revenueRange: {

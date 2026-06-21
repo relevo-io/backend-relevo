@@ -18,7 +18,8 @@ export const createCheckoutSession = asyncWrapper(async (req: AuthRequest, res: 
     userId,
     roles,
     kind: req.body.kind,
-    offerDraft: req.body.offerDraft
+    offerDraft: req.body.offerDraft,
+    returnUrlBase: req.body.returnUrlBase
   });
 
   res.status(201).json(result);

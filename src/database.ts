@@ -156,7 +156,7 @@ export async function seedingDatabase(): Promise<void> {
     const ofertasData: IOferta[] = [
       {
         region: 'Barcelona',
-        sector: 'Hospitality',
+        sector: 'HOSPITALITY',
         revenueRange: 'BETWEEN_500K_1M',
         owner: paula._id as mongoose.Types.ObjectId,
         creationYear: 2010,
@@ -167,7 +167,7 @@ export async function seedingDatabase(): Promise<void> {
       },
       {
         region: 'International',
-        sector: 'Technology',
+        sector: 'TECHNOLOGY',
         revenueRange: 'OVER_5M',
         owner: pabloS._id as mongoose.Types.ObjectId,
         creationYear: 2018,
@@ -178,7 +178,7 @@ export async function seedingDatabase(): Promise<void> {
       },
       {
         region: 'Girona',
-        sector: 'Retail',
+        sector: 'RETAIL',
         revenueRange: 'BETWEEN_100K_500K',
         owner: paula._id as mongoose.Types.ObjectId,
         creationYear: 2015,
@@ -189,7 +189,7 @@ export async function seedingDatabase(): Promise<void> {
       },
       {
         region: 'Vallès Occidental',
-        sector: 'Services',
+        sector: 'SERVICES',
         revenueRange: 'BETWEEN_1M_5M',
         owner: pol._id as mongoose.Types.ObjectId,
         creationYear: 2005,
@@ -201,15 +201,15 @@ export async function seedingDatabase(): Promise<void> {
     ];
 
     const dynamicRegions = ['Barcelona', 'Madrid', 'Valencia', 'Sevilla', 'Bilbao', 'Malaga', 'Zaragoza', 'Alicante'];
-    const dynamicSectors = [
-      'Technology',
-      'Healthcare',
-      'Hospitality',
-      'Retail',
-      'Manufacturing',
-      'Logistics',
-      'Education',
-      'Services'
+    const dynamicSectors: IOferta['sector'][] = [
+      'TECHNOLOGY',
+      'HEALTHCARE',
+      'HOSPITALITY',
+      'RETAIL',
+      'INDUSTRIAL',
+      'LOGISTICS',
+      'EDUCATION',
+      'SERVICES'
     ];
     const dynamicRevenues: IOferta['revenueRange'][] = [
       'UNDER_100K',

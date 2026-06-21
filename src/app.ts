@@ -16,6 +16,7 @@ import { globalErrorHandler } from './middlewares/errorMiddleware.js';
 import { httpLogger } from './middlewares/loggerMiddleware.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.js';
+import historialRoutes from './routes/historialRoutes.js';
 import { handleStripeWebhook } from './controllers/paymentController.js';
 
 const app = express();
@@ -36,8 +37,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests without origin (e.g. Postman), the configured frontend URL,
       // or any localhost origin (needed for Flutter Web which uses a dynamic port in dev).
-      const isLocalhost = origin && /^http:\/\/localhost(:\d+)?$/.test(origin);
-      if (!origin || origin === config.frontendUrl || origin === config.apiUrl || isLocalhost) {
+      const isLocalhost = origin && /^https?:\/\/localhost(:\d+)?$/.test(origin);
+      const isLoopback = origin && /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+      const isIpv6Loopback = origin && /^https?:\/\/\[::1\](:\d+)?$/.test(origin);
+      if (
+        !origin ||
+        origin === config.frontendUrl ||
+        origin === config.apiUrl ||
+        isLocalhost ||
+        isLoopback ||
+        isIpv6Loopback
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -82,6 +92,7 @@ app.use('/api/mentoring', mentoringRoutes);
 app.use('/api/alertas', alertaRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/historial', historialRoutes);
 
 /**
  * 📖 API DOCUMENTATION (SWAGGER)

@@ -1,5 +1,5 @@
-﻿import { z } from 'zod';
-import { employeeRanges, revenueRanges } from '../models/ofertaModel.js';
+import { z } from 'zod';
+import { employeeRanges, revenueRanges, sectors } from '../models/ofertaModel.js';
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
 const objectIdSchema = z.string().regex(objectIdRegex, 'El id debe tener formato ObjectId valido');
@@ -11,7 +11,7 @@ const emptyToUndefined = (value: unknown) => {
 
 const ofertaBaseSchema = z.object({
   region: z.string().trim().min(1, 'La region es obligatoria'),
-  sector: z.string().trim().min(1, 'El sector es obligatorio'),
+  sector: z.enum(sectors, { message: 'El sector no es valido' }),
   revenueRange: z.preprocess(emptyToUndefined, z.enum(revenueRanges).optional()),
   creationYear: z.preprocess(
     emptyToUndefined,
@@ -38,7 +38,7 @@ export const ofertaQuerySchema = z
   .object({
     excludeOwnerId: objectIdSchema.optional(),
     search: z.string().trim().min(1).max(120).optional(),
-    sector: z.string().trim().min(1).max(120).optional(),
+    sector: z.enum(sectors).optional(),
     region: z.string().trim().min(1).max(120).optional(),
     revenueRange: z.enum(revenueRanges).optional(),
     employeeRange: z.enum(employeeRanges).optional(),
