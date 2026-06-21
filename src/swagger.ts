@@ -76,6 +76,32 @@ const options: swaggerJsdoc.Options = {
               }
             }
           }
+        },
+        Unauthorized: {
+          description: 'No autorizado / Token no válido o expirado',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        Forbidden: {
+          description: 'Acceso prohibido / Rol o permisos insuficientes',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' }
+                }
+              }
+            }
+          }
         }
       }
     }

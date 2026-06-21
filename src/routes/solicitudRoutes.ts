@@ -119,7 +119,7 @@ router.get(
 );
 
 /**
- * @swagger
+ * @openapi
  * /api/solicitudes/me/enviadas:
  *   get:
  *     summary: Obtener solicitudes enviadas por el usuario actual (como interesado)
@@ -144,7 +144,7 @@ router.get(
 );
 
 /**
- * @swagger
+ * @openapi
  * /api/solicitudes/oferta/{ofertaId}/me:
  *   get:
  *     summary: Obtener la solicitud del usuario actual para una oferta específica

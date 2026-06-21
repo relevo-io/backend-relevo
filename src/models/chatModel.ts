@@ -49,6 +49,23 @@ import { Schema, model, Types } from 'mongoose';
  *           type: string
  *           enum: [PENDING_APPROVAL, APPROVED, REJECTED]
  *           default: PENDING_APPROVAL
+ *         closedByOwner:
+ *           type: boolean
+ *           default: false
+ *         closedByInterested:
+ *           type: boolean
+ *           default: false
+ *         closedAt:
+ *           type: string
+ *           format: date-time
+ *         postCloseGuidanceOwnerDecision:
+ *           type: string
+ *           enum: [PENDING, ACCEPTED, DISMISSED]
+ *           default: PENDING
+ *         postCloseGuidanceInterestedDecision:
+ *           type: string
+ *           enum: [PENDING, ACCEPTED, DISMISSED]
+ *           default: PENDING
  *         createdAt:
  *           type: string
  *           format: date-time

@@ -62,8 +62,115 @@ const oauthLoginSchema = z.object({
  *         description: Credenciales incorrectas
  */
 router.post('/login', validate({ body: loginSchema }), login);
+
+/**
+ * @openapi
+ * /api/auth/firebase:
+ *   post:
+ *     summary: Inicia sesión con un token de Firebase
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Token de ID generado por Firebase Authentication
+ *                 example: "eyJhbGciOiJSUzI1NiIs..."
+ *               providerAccessToken:
+ *                 type: string
+ *                 description: Token de acceso del proveedor (opcional)
+ *                 example: "gho_123456789..."
+ *     responses:
+ *       200:
+ *         description: Login exitoso, devuelve token
+ *       400:
+ *         description: Token inválido o parámetros incorrectos
+ */
 router.post('/firebase', validate({ body: firebaseLoginSchema }), firebaseLogin);
+
+/**
+ * @openapi
+ * /api/auth/oauth/github/start:
+ *   post:
+ *     summary: Obtiene la URL de autorización para el login con GitHub
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [redirectUri, state]
+ *             properties:
+ *               redirectUri:
+ *                 type: string
+ *                 format: uri
+ *                 description: URI a la que redirigirá GitHub tras la autorización
+ *                 example: "http://localhost:3000/auth/callback"
+ *               state:
+ *                 type: string
+ *                 description: Estado para prevenir CSRF
+ *                 example: "random_state_string"
+ *     responses:
+ *       200:
+ *         description: URL de autorización generada con éxito
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   format: uri
+ *                   example: "https://github.com/login/oauth/authorize?..."
+ *       400:
+ *         description: Parámetros inválidos
+ */
 router.post('/oauth/github/start', validate({ body: oauthStartSchema }), getGitHubAuthorizeUrl);
+
+/**
+ * @openapi
+ * /api/auth/oauth/{provider}:
+ *   post:
+ *     summary: Completa la autenticación OAuth con el proveedor especificado (por ejemplo, github)
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nombre del proveedor OAuth (e.g., github)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code, redirectUri]
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: Código de autorización devuelto por el proveedor OAuth
+ *                 example: "a1b2c3d4e5f6"
+ *               redirectUri:
+ *                 type: string
+ *                 format: uri
+ *                 description: URI de redirección registrada originalmente
+ *                 example: "http://localhost:3000/auth/callback"
+ *     responses:
+ *       200:
+ *         description: Autenticación exitosa, devuelve token
+ *       400:
+ *         description: Código o URI inválidos
+ *       500:
+ *         description: Error en la comunicación con el proveedor OAuth
+ */
 router.post('/oauth/:provider', validate({ body: oauthLoginSchema }), oauthLogin);
 
 /**

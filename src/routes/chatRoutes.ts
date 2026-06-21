@@ -185,9 +185,232 @@ router.patch('/:chatId/readonly', asyncWrapper(setChatReadOnly));
  */
 router.patch('/:chatId/status', asyncWrapper(updateChatStatus));
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Rating:
+ *       type: object
+ *       required:
+ *         - chat
+ *         - fromUser
+ *         - toUser
+ *         - ratedRole
+ *         - score
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID únic de la valoració en format ObjectId
+ *           example: '65f2c3d4e5f6a7b8c9d0e1f2'
+ *         chat:
+ *           type: string
+ *           description: ID del xat associat
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         fromUser:
+ *           type: string
+ *           description: ID de l'usuari que realitza la valoració
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
+ *         toUser:
+ *           type: string
+ *           description: ID de l'usuari valorat
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
+ *         ratedRole:
+ *           type: string
+ *           enum: [OWNER, INTERESTED]
+ *           description: Rol del destí de la valoració
+ *           example: 'INTERESTED'
+ *         score:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *           description: Puntuació de 1 a 5
+ *           example: 5
+ *         comment:
+ *           type: string
+ *           maxLength: 600
+ *           description: Comentari addicional (opcional)
+ *           example: 'Molt bon tracte i comunicació fluida.'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @openapi
+ * /api/chats/{chatId}/close:
+ *   post:
+ *     summary: Tanca la venda o tracte associat al xat pel participant actual
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de MongoDB del xat
+ *     responses:
+ *       200:
+ *         description: Estat del tancament actualitzat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chat'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Xat no trobat
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/:chatId/close', authorizeChatParticipant, asyncWrapper(closeDeal));
+
+/**
+ * @openapi
+ * /api/chats/{chatId}/post-close-guidance:
+ *   post:
+ *     summary: Registra la decisió de l'usuari sobre el programa de guia/acompanyament post-tancament
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de MongoDB del xat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - decision
+ *             properties:
+ *               decision:
+ *                 type: string
+ *                 enum: [ACCEPTED, DISMISSED]
+ *                 description: Decisió respecte al guiatge post-cierre
+ *                 example: ACCEPTED
+ *     responses:
+ *       200:
+ *         description: Decisió registrada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Chat'
+ *       400:
+ *         description: Paràmetres invàlids o la venda encara no està tancada
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Xat no trobat
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/:chatId/post-close-guidance', authorizeChatParticipant, asyncWrapper(setPostCloseGuidanceDecision));
+
+/**
+ * @openapi
+ * /api/chats/{chatId}/my-rating:
+ *   get:
+ *     summary: Obté la valoració que l'usuari actual ha donat a l'altre usuari en aquest xat
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de MongoDB del xat
+ *     responses:
+ *       200:
+ *         description: Valoració obtinguda (pot ser null si no s'ha valorat)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rating:
+ *                   anyOf:
+ *                     - $ref: '#/components/schemas/Rating'
+ *                     - type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Xat no trobat
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/:chatId/my-rating', authorizeChatParticipant, asyncWrapper(getMyChatRating));
+
+/**
+ * @openapi
+ * /api/chats/{chatId}/rating:
+ *   post:
+ *     summary: Valora l'altre usuari d'aquest xat indicant puntuació i comentari
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de MongoDB del xat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - score
+ *             properties:
+ *               score:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: Puntuació atorgada (1-5)
+ *                 example: 5
+ *               comment:
+ *                 type: string
+ *                 maxLength: 600
+ *                 description: Comentari de feedback
+ *                 example: 'Perfecte'
+ *     responses:
+ *       200:
+ *         description: Valoració creada o actualitzada correctament
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Rating'
+ *       400:
+ *         description: Paràmetres invàlids
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Xat no trobat
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/:chatId/rating', authorizeChatParticipant, asyncWrapper(rateChat));
 
 export default router;
