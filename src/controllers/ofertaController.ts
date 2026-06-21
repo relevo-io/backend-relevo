@@ -269,3 +269,23 @@ export const getOfertasPorSectorGrafana = asyncWrapper(async (req: Request, res:
 
   res.status(200).json(stats);
 });
+
+export const getOfertasPorRevenueGrafana = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const stats = await OfertaModel.aggregate([
+    {
+      $group: {
+        _id: '$revenueRange',
+        total: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        revenueRange: { $ifNull: ['$_id', 'NOT_SPECIFIED'] }, // Por si alguna oferta no tiene el campo requerido
+        total: 1
+      }
+    }
+  ]);
+
+  res.status(200).json(stats);
+});
