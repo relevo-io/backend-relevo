@@ -111,6 +111,8 @@ const router = Router();
  */
 router.get('/', optionalAuthenticateToken, validate({ query: ofertaQuerySchema }), ofertaController.getOfertas);
 
+router.get('/stats/sector', ofertaController.getOfertasPorSectorGrafana);
+
 /**
  * @openapi
  * /api/ofertas/me:
