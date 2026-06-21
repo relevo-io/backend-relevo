@@ -26,6 +26,8 @@ ENV NODE_ENV=production
 # Copiamos solo los archivos necesarios de la etapa anterior
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/assets ./src/assets
+
 
 # Instalamos SOLO las dependencias de producción
 RUN npm ci --omit=dev --ignore-scripts
