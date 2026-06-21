@@ -71,6 +71,51 @@ const hashPassword = async (plainPassword: string): Promise<string> => {
  *           type: array
  *           items:
  *             type: string
+ *         preferredSectors:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ['TECHNOLOGY']
+ *         preferredEmployeeRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS']
+ *           example: ['11_25']
+ *         preferredRevenueRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *           example: ['BETWEEN_100K_500K']
+ *         preferredCreationYearFrom:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2010
+ *         preferredCreationYearTo:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2024
+ *         notificationPreferences:
+ *           type: object
+ *           properties:
+ *             newMessages: { type: boolean }
+ *             applicationStatus: { type: boolean }
+ *             newApplications: { type: boolean }
+ *             cvAnalysis: { type: boolean }
+ *             offerAlerts: { type: boolean }
+ *         fcmTokens:
+ *           type: array
+ *           items:
+ *             type: string
+ *         publicationCredits:
+ *           type: integer
+ *           default: 0
+ *           example: 1
+ *         proExpiresAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
  *         visible:
  *           type: boolean
  *           default: true

@@ -32,35 +32,54 @@ const router = Router();
  *       type: object
  *       required:
  *         - opportunityId
+ *         - bio
+ *         - professionalBackground
+ *         - preferredRegions
+ *         - availableCapital
+ *         - financingNeeded
+ *         - ndaAccepted
  *       properties:
  *         opportunityId:
  *           type: string
- *           description: ID de la oferta
+ *           description: ID de la oferta a solicitar acceso
  *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
  *         message:
  *           type: string
  *           maxLength: 1000
  *           example: 'I am interested in this opportunity.'
+ *         bio:
+ *           type: string
+ *           minLength: 10
+ *           description: Biografía corta del solicitante
+ *           example: 'Inversor profesional con experiencia en retail.'
+ *         professionalBackground:
+ *           type: string
+ *           minLength: 10
+ *           description: Trayectoria profesional del solicitante
+ *           example: '15 años gestionando operaciones comerciales en cadenas de supermercados.'
+ *         preferredRegions:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ['Catalunya', 'Madrid']
+ *         availableCapital:
+ *           type: number
+ *           minimum: 0
+ *           description: Capital disponible para la inversión
+ *           example: 150000
+ *         financingNeeded:
+ *           type: boolean
+ *           description: Indica si se requiere financiación externa
+ *           example: false
+ *         ndaAccepted:
+ *           type: boolean
+ *           enum: [true]
+ *           description: Debe aceptarse el acuerdo de confidencialidad (NDA)
+ *           example: true
  *
  *     UpdateSolicitud:
  *       type: object
  *       properties:
- *         owner:
- *           type: string
- *           description: ID de l'usuari propietari
- *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
- *         interestedUser:
- *           type: string
- *           description: ID de l'usuari interessat
- *           example: '64f1a2b3c4d5e6f7a8b9c0d2'
- *         opportunity:
- *           type: string
- *           description: ID de l'oferta
- *           example: '64f1a2b3c4d5e6f7a8b9c0d3'
- *         status:
- *           type: string
- *           enum: [PENDING, ACCEPTED, REJECTED]
- *           example: 'ACCEPTED'
  *         message:
  *           type: string
  *           maxLength: 1000

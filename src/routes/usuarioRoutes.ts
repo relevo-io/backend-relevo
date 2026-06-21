@@ -33,7 +33,7 @@ const router = Router();
  *         - fullName
  *         - email
  *         - password
- *         - role
+ *         - roles
  *       properties:
  *         fullName:
  *           type: string
@@ -49,30 +49,82 @@ const router = Router();
  *           minLength: 6
  *           format: password
  *           example: 'secret123'
- *         role:
+ *         roles:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [OWNER, INTERESTED]
+ *           minItems: 1
+ *           maxItems: 2
+ *           example: ['INTERESTED']
+ *         authProvider:
  *           type: string
- *           enum: [OWNER, INTERESTED, ADMIN]
- *           example: 'INTERESTED'
+ *           enum: [local, google, github]
+ *           default: local
+ *           example: 'local'
+ *         providerId:
+ *           type: string
+ *           nullable: true
  *         location:
  *           type: string
  *           maxLength: 120
+ *           example: 'Barcelona'
  *         bio:
  *           type: string
  *           maxLength: 500
+ *           example: 'Emprendedor de tecnología'
  *         professionalBackground:
  *           type: string
  *           maxLength: 2000
+ *           example: '10 años en consultoría y desarrollo de software.'
+ *         cv:
+ *           type: string
+ *           maxLength: 4000
+ *           description: Clave de S3 o texto descriptivo del currículum
  *         preferredRegions:
  *           type: array
  *           items:
  *             type: string
+ *           example: ['Catalunya', 'Madrid']
+ *         preferredSectors:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ['TECHNOLOGY', 'SERVICES']
+ *         preferredEmployeeRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS']
+ *           example: ['11_25', '26_50']
+ *         preferredRevenueRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *           example: ['BETWEEN_100K_500K']
+ *         preferredCreationYearFrom:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2010
+ *         preferredCreationYearTo:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2024
  *         visible:
  *           type: boolean
  *           default: true
+ *           example: true
  *         language:
  *           type: string
  *           enum: [es, ca, en]
  *           default: es
+ *           example: 'es'
+ *         theme:
+ *           type: string
+ *           enum: [light, dark]
+ *           default: light
+ *           example: 'light'
  *
  *     UpdateUsuario:
  *       type: object
@@ -82,34 +134,80 @@ const router = Router();
  *           type: string
  *           minLength: 2
  *           maxLength: 120
+ *           example: 'Juan Perez'
  *         email:
  *           type: string
  *           format: email
+ *           example: 'juan@relevo.io'
  *         password:
  *           type: string
  *           minLength: 6
  *           format: password
- *         role:
- *           type: string
- *           enum: [OWNER, INTERESTED, ADMIN]
+ *           example: 'secret123'
+ *         roles:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [OWNER, INTERESTED, ADMIN]
+ *           minItems: 1
+ *           maxItems: 2
+ *           example: ['INTERESTED']
  *         location:
  *           type: string
  *           maxLength: 120
+ *           example: 'Barcelona'
  *         bio:
  *           type: string
  *           maxLength: 500
+ *           example: 'Emprendedor de tecnología'
  *         professionalBackground:
  *           type: string
  *           maxLength: 2000
+ *           example: '10 años en consultoría y desarrollo de software.'
+ *         cv:
+ *           type: string
+ *           maxLength: 4000
  *         preferredRegions:
  *           type: array
  *           items:
  *             type: string
+ *           example: ['Catalunya', 'Madrid']
+ *         preferredSectors:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ['TECHNOLOGY', 'SERVICES']
+ *         preferredEmployeeRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS']
+ *           example: ['11_25', '26_50']
+ *         preferredRevenueRanges:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *           example: ['BETWEEN_100K_500K']
+ *         preferredCreationYearFrom:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2010
+ *         preferredCreationYearTo:
+ *           type: integer
+ *           minimum: 1800
+ *           example: 2024
  *         visible:
  *           type: boolean
+ *           example: true
  *         language:
  *           type: string
  *           enum: [es, ca, en]
+ *           example: 'es'
+ *         theme:
+ *           type: string
+ *           enum: [light, dark]
+ *           example: 'light'
  */
 
 /**

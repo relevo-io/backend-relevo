@@ -32,7 +32,6 @@ const router = Router();
  *       required:
  *         - region
  *         - sector
- *         - owner
  *         - companyDescription
  *       properties:
  *         region:
@@ -40,13 +39,15 @@ const router = Router();
  *           example: 'Catalunya'
  *         sector:
  *           type: string
- *           example: 'Tecnologia'
+ *           enum: [TECHNOLOGY, HOSPITALITY, SERVICES, INDUSTRIAL, RETAIL, HEALTHCARE, LOGISTICS, EDUCATION]
+ *           example: 'TECHNOLOGY'
  *         revenueRange:
  *           type: string
  *           enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *           example: 'BETWEEN_100K_500K'
  *         owner:
  *           type: string
- *           description: ID de l'usuari propietari (referencia a Usuario)
+ *           description: ID de l'usuari propietari (opcional, per defecte és l'usuari autenticat)
  *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
  *         creationYear:
  *           type: number
@@ -54,13 +55,16 @@ const router = Router();
  *           example: 2015
  *         employeeRange:
  *           type: string
- *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
+ *           enum: ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS']
+ *           example: '11_25'
  *         companyDescription:
  *           type: string
  *           maxLength: 3000
+ *           example: 'Empresa de tecnologia sostenible fundada el 2019.'
  *         extendedDescription:
  *           type: string
  *           maxLength: 10000
+ *           example: 'Descripció ampliada per a inversors.'
  *
  *     UpdateOferta:
  *       type: object
@@ -68,27 +72,35 @@ const router = Router();
  *       properties:
  *         region:
  *           type: string
+ *           example: 'Catalunya'
  *         sector:
  *           type: string
+ *           enum: [TECHNOLOGY, HOSPITALITY, SERVICES, INDUSTRIAL, RETAIL, HEALTHCARE, LOGISTICS, EDUCATION]
+ *           example: 'TECHNOLOGY'
  *         revenueRange:
  *           type: string
  *           enum: [UNDER_100K, BETWEEN_100K_500K, BETWEEN_500K_1M, BETWEEN_1M_5M, OVER_5M]
+ *           example: 'BETWEEN_100K_500K'
  *         owner:
  *           type: string
- *           description: ID de l'usuari propietari (referencia a Usuario)
+ *           description: ID de l'usuari propietari
+ *           example: '64f1a2b3c4d5e6f7a8b9c0d1'
  *         creationYear:
  *           type: number
  *           minimum: 1800
  *           example: 2015
  *         employeeRange:
  *           type: string
- *           enum: [1_5, 6_10, 11_25, 26_50, 51_100, 100_PLUS]
+ *           enum: ['1_5', '6_10', '11_25', '26_50', '51_100', '100_PLUS']
+ *           example: '11_25'
  *         companyDescription:
  *           type: string
  *           maxLength: 3000
+ *           example: 'Empresa de tecnologia sostenible fundada el 2019.'
  *         extendedDescription:
  *           type: string
  *           maxLength: 10000
+ *           example: 'Descripció ampliada per a inversors.'
  */
 
 /**
