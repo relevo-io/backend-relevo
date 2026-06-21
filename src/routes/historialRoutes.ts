@@ -92,10 +92,10 @@ const router = Router();
  *                   type: integer
  *                 totalPages:
  *                   type: integer
- *                data:
- *                  type: array
- *                  items:
- *                    $ref: '#/components/schemas/Historial'
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Historial'
  *       500:
  *         description: Error intern del servidor
  */
