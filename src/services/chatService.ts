@@ -98,6 +98,15 @@ export const obtenerChatsPorUsuario = async (userId: string): Promise<IChat[]> =
     .lean();
 };
 
+export const obtenerTodosLosChats = async (): Promise<IChat[]> => {
+  return await ChatModel.find({})
+    .sort({ updatedAt: -1 })
+    .populate('owner', 'fullName email')
+    .populate('oferta', 'sector region companyDescription')
+    .populate('interested', 'fullName email')
+    .lean();
+};
+
 export const obtenerChatDetalladoPorId = async (chatId: string): Promise<IChat | null> => {
   return await ChatModel.findById(chatId)
     .populate('owner', 'fullName email')

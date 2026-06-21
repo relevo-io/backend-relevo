@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { authenticateToken, authorizeChatParticipant } from '../middlewares/auth.js';
+import { authenticateToken, authorizeChatParticipant, authorizeRoles } from '../middlewares/auth.js';
 import { asyncWrapper } from '../utils/asyncWrapper.js';
 import {
   getOrCreateChat,
   getMyChats,
+  getAllChatsAdmin,
   getChatMessages,
   markChatAsRead,
   setChatReadOnly,
@@ -76,6 +77,8 @@ router.post('/', asyncWrapper(getOrCreateChat));
  *                 $ref: '#/components/schemas/Chat'
  */
 router.get('/', asyncWrapper(getMyChats));
+
+router.get('/admin/all', authorizeRoles('ADMIN'), asyncWrapper(getAllChatsAdmin));
 
 /**
  * @openapi

@@ -63,6 +63,11 @@ export const getMyChats = asyncWrapper(async (req: AuthRequest, res: Response): 
   res.status(200).json(chats);
 });
 
+export const getAllChatsAdmin = asyncWrapper(async (_req: AuthRequest, res: Response): Promise<void> => {
+  const chats = await chatService.obtenerTodosLosChats();
+  res.status(200).json(chats);
+});
+
 // ─────────────────────────────────────────────
 //  GET /api/chats/:chatId/messages
 //  Historial con paginación por cursor temporal
