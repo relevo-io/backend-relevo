@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos (MongoDB)
+  mongodb:
+    image: mongo:latest
+    container_name: relevo_db
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - backend_internal
+    restart: unless-stopped
+
+  # 2. Tu Backend Node.js
+  backend:
+    build: .
+    container_name: relevo_backend
+    ports:
+      - '4000:4000' # Escucha en el puerto 4000 de tu .env
+    depends_on:
+      - mongodb
+    env_file:
+      - .env
+    environment:
+      # Sobrescribimos la IP local por el nombre del contenedor de Mongo
+      # Así no tienes que tocar tu archivo .env para nada
+      - MONGO_URI=mongodb://mongodb:27017/ea-exercise-mongoose
+    networks:
+      - backend_internal
+      - frontend_net
+    restart: unless-stopped
+
+  # 3. La WebApp Principal (React/Vite)
+  web:
+    image: bictorp/web-ea:v1
+    container_name: relevo_web
+    ports:
+      - '80:80' # Accesible en http://localhost
+    depends_on:
+      - backend
+    networks:
+      - frontend_net
+    restart: unless-stopped
+
+  # 4. El Backoffice (Angular)
+  backoffice:
+    image: bictorp/backoffice-ea:v1.2
+    container_name: relevo_backoffice
+    ports:
+      - '4200:80' # Accesible en http://localhost:4200 (Coincide con tu FRONTEND_URL)
+    depends_on:
+      - backend
+    networks:
+      - frontend_net
+    restart: unless-stopped
+
+  # 5. Panel de Control y Observatorio (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: relevo_grafana
+    ports:
+      - '3000:3000' # Accesible en http://localhost:3000
+    environment:
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
+      # Permite incrustar Grafana en iframes
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      # Permite ver el panel sin tener que iniciar sesión
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - backend_internal
+      - frontend_net
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+# Volúmenes para persistencia de datos
+volumes:
+  mongo_data:
+  grafana_data:
+
+# Redes aisladas por seguridad
+networks:
+  backend_internal:
+    driver: bridge
+    internal: true # Bloquea el acceso exterior a la base de datos
+  frontend_net:
+    driver: bridge

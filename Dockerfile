@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalamos todas las dependencias (incluyendo devDependencies para compilar)
-RUN npm ci
+RUN npm install
 
 # Copiamos el código fuente y config de TS
 COPY tsconfig.json ./

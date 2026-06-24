@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import { IOferta } from '../models/ofertaModel.js';
+import { IOferta, OfertaModel } from '../models/ofertaModel.js';
 import * as ofertaService from '../services/ofertaService.js';
 import * as usuarioService from '../services/usuarioService.js';
 import { AuthRequest } from '../middlewares/auth.js';
@@ -248,4 +248,44 @@ export const removeOfertaFavorita = asyncWrapper(async (req: AuthRequest, res: R
   await ofertaService.quitarOfertaDeFavoritos(userId, req.params.id);
   const favoriteCount = await ofertaService.contarFavoritosOferta(req.params.id);
   res.status(200).json({ message: 'Oferta eliminada de favoritos', favoriteCount });
+});
+
+export const getOfertasPorSectorGrafana = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const stats = await OfertaModel.aggregate([
+    {
+      $group: {
+        _id: '$sector',
+        total: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        sector: '$_id',
+        total: 1
+      }
+    }
+  ]);
+
+  res.status(200).json(stats);
+});
+
+export const getOfertasPorRevenueGrafana = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
+  const stats = await OfertaModel.aggregate([
+    {
+      $group: {
+        _id: '$revenueRange',
+        total: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        revenueRange: { $ifNull: ['$_id', 'NOT_SPECIFIED'] }, // Por si alguna oferta no tiene el campo requerido
+        total: 1
+      }
+    }
+  ]);
+
+  res.status(200).json(stats);
 });
